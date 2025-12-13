@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Mac system files
+.DS_Store
+
+# Hardhat/Blockchain Artifacts
+web3-contracts/artifacts/
+web3-contracts/cache/
+web3-contracts/ignition/deployments/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
