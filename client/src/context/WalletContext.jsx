@@ -39,16 +39,19 @@ const WalletProvider = ({ children }) => {
     setLoading(false);
   };
 
-  // 2. Check Role Logic
+// 2. Check Role Logic 
   const checkUserRole = async (contractInstance, address) => {
     try {
-      const isPatient = await contractInstance.isRegisteredPatient(address);
+      // In Solidity, public mappings create a getter function with the same name.
+      // So 'mapping(address => bool) public registeredPatients' becomes 'registeredPatients(address)'
+      
+      const isPatient = await contractInstance.registeredPatients(address);
       if (isPatient) {
         setRole('patient');
         return;
       }
 
-      const isHospital = await contractInstance.isRegisteredHospital(address);
+      const isHospital = await contractInstance.registeredHospitals(address);
       if (isHospital) {
         setRole('hospital');
         return;
