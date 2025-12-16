@@ -52,7 +52,7 @@ const RegistrationPage = () => {
 
       // 2. DATABASE WRITE (The Sync)
       // Once blockchain confirms, we save to MongoDB so search works fast
-      await axios.post('http://localhost:5000/api/register', {
+      await axios.post('/api/register', {
         walletAddress: account,
         userType: userType
       });

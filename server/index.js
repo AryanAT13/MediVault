@@ -1,26 +1,37 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
+const cors = require('cors'); // Ensure you have this: npm install cors
 const connectDB = require('./db');
-const User = require('./models/User'); // Our new model
-const { CONTRACT_ADDRESS } = require('./config'); // Your contract address
+const User = require('./models/User'); 
 
 const app = express();
 
-// Middleware
-app.use(express.json()); // Replaces body-parser
+// --- THE FIX: BRUTE FORCE CORS ---
+// We place this at the very top to catch every request
 app.use(cors({
-  origin: "http://localhost:5173", // Allow your specific frontend
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+    origin: "http://localhost:5173", // Allow your frontend
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true // Allow cookies/headers
 }));
+
+// Manual Backup Header (Just in case the package fails)
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "http://localhost:5173");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Credentials", "true");
+    next();
+});
+
+// JSON Parser
+app.use(express.json());
 
 // Connect to Database
 connectDB();
 
 // --- ROUTES ---
 
-// 1. Check if User/Hospital is Registered (Replaces their complex app.post('/'))
+// 1. Check if User/Hospital is Registered
 app.get('/api/check-user/:address', async (req, res) => {
     try {
         const user = await User.findOne({ walletAddress: req.params.address.toLowerCase() });
@@ -30,16 +41,17 @@ app.get('/api/check-user/:address', async (req, res) => {
             res.json({ exists: false });
         }
     } catch (err) {
+        console.error("Database Error:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// 2. Register a New User (Replaces app.post('/register'))
+// 2. Register a New User
 app.post('/api/register', async (req, res) => {
+    console.log("📝 Register Request Received:", req.body); // Debug log
     try {
         const { walletAddress, userType } = req.body;
         
-        // Check if already exists
         let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
         if (user) return res.status(400).json({ msg: 'User already registered' });
 
@@ -49,13 +61,15 @@ app.post('/api/register', async (req, res) => {
         });
 
         await user.save();
+        console.log("✅ User Saved to DB:", user);
         res.json({ msg: 'Registration successful', user });
     } catch (err) {
+        console.error("❌ Registration Error:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// 3. Get Notifications (Pending Requests for a Patient)
+// 3. Get Notifications
 app.get('/api/notifications/:address', async (req, res) => {
     try {
         const user = await User.findOne({ walletAddress: req.params.address.toLowerCase() });
@@ -67,15 +81,13 @@ app.get('/api/notifications/:address', async (req, res) => {
     }
 });
 
-// 4. Add Notification (When Hospital requests access)
+// 4. Add Notification
 app.post('/api/request-access', async (req, res) => {
     try {
         const { patientAddress, hospitalAddress, hospitalName } = req.body;
-
         const patient = await User.findOne({ walletAddress: patientAddress.toLowerCase() });
         if (!patient) return res.status(404).json({ msg: 'Patient not found' });
 
-        // Add to pending requests if not already there
         const alreadyRequested = patient.pendingRequests.some(req => req.hospitalAddress === hospitalAddress.toLowerCase());
         
         if (!alreadyRequested) {
@@ -85,13 +97,11 @@ app.post('/api/request-access', async (req, res) => {
             });
             await patient.save();
         }
-
         res.json({ msg: 'Request sent' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Start Server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
