@@ -84,7 +84,7 @@ const UserSiteHomepage = () => {
             toast.info(`Granting access to ${hospitalName}... Check MetaMask.`);
 
             // Call the Smart Contract function to allow access
-            const tx = await contract.addAllowedAddress(account, hospitalAddress);
+            const tx = await contract.grantAccess(hospitalAddress);
             await tx.wait(); // Wait for mining
 
             toast.success("Access Granted Successfully!");

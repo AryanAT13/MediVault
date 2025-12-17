@@ -4,14 +4,8 @@ import WalletProvider from './context/WalletContext';
 
 // --- IMPORT PAGES ---
 import RegistrationPage from './pages/RegistrationPage';
-import UserSiteHomepage from './pages/UserSiteHomepage'; // <--- The New Dashboard
-
-// Placeholder for Hospital (We will build this next)
-const HospitalHomepage = () => (
-  <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
-    <h1 className="text-3xl">🏥 Hospital Dashboard Coming Soon</h1>
-  </div>
-);
+import UserSiteHomepage from './pages/UserSiteHomepage'; 
+import HospitalHomepage from './pages/HospitalHomepage'; //0xbda5747bfd65f08deb54cb465eb87d40e51b197e
 
 function App() {
   return (
