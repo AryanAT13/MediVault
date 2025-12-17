@@ -1,24 +1,34 @@
 import React from 'react';
-import WalletProvider from './context/WalletContext';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import WalletProvider from './context/WalletContext';
 
-// Import the new page
+// --- IMPORT PAGES ---
 import RegistrationPage from './pages/RegistrationPage';
+import UserSiteHomepage from './pages/UserSiteHomepage'; // <--- The New Dashboard
 
-// Placeholder components so the app doesn't crash if you haven't built these yet
-const UserSiteHomepage = () => <div className="text-white">User Dashboard (Coming Soon)</div>;
-const HospitalHomepage = () => <div className="text-white">Hospital Dashboard (Coming Soon)</div>;
-const LoginPage = () => <div className="text-white">Login Page</div>;
+// Placeholder for Hospital (We will build this next)
+const HospitalHomepage = () => (
+  <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+    <h1 className="text-3xl">🏥 Hospital Dashboard Coming Soon</h1>
+  </div>
+);
 
 function App() {
   return (
-    <BrowserRouter> {/* Router must be outside Provider in some setups, but here it's fine */}
+    <BrowserRouter>
       <WalletProvider>
         <div className="App">
            <Routes>
-              <Route path='/' element={<RegistrationPage />} /> {/* Default to Register for now */}
+              {/* Default Route */}
+              <Route path='/' element={<RegistrationPage />} />
+              
+              {/* Registration Route */}
               <Route path='/register' element={<RegistrationPage />} />
+              
+              {/* Patient Dashboard Route */}
               <Route path='/userpage' element={<UserSiteHomepage />} />
+              
+              {/* Hospital Dashboard Route */}
               <Route path='/hospitalpage' element={<HospitalHomepage />} />
            </Routes>
         </div>
