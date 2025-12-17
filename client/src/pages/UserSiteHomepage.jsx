@@ -15,41 +15,45 @@ const UserSiteHomepage = () => {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // --- 1. FETCH DATA FROM BLOCKCHAIN ---
-// --- 1. FETCH DATA FROM BLOCKCHAIN (FIXED) ---
+// --- 1. FETCH DATA FROM BLOCKCHAIN (FINAL FIX) ---
   const fetchBlockchainData = async () => {
     if (!contract || !account) return;
 
     try {
-      // DEBUG: Let's see exactly what we are asking for
       console.log("Fetching profile for:", account);
 
-      // CORRECTION: We call 'registeredPatients' instead of 'get_general_data'
-      // This matches the mapping name in your Solidity contract.
-      // It returns an array: [name, age, gender, contactInfo]
-      const genData = await contract.registeredPatients(account);
+      // CALLING THE MAPPING FROM LINE 31 OF YOUR SOLIDITY CODE
+      // struct PatientData { Name, Gender, Age, Contact, Blood, Allergies... }
+      const data = await contract.patients(account);
       
-      console.log("Data Received:", genData);
+      console.log("Data Received:", data);
+
+      // MAPPING THE RESULT (Order matters!)
+      // Index 0: Name
+      // Index 1: Gender
+      // Index 2: Age
+      // Index 3: Contact Number
+      // Index 4: Blood Type
+      // Index 5: Allergies
+      // Index 6: Deficiencies
+      // Index 7: Chronic Diseases
 
       setGeneralData({
-        name: genData[0],             // Name is the 1st item
-        age: genData[1].toString(),   // Age is the 2nd item (Convert BigInt to string)
-        gender: genData[2],           // Gender is the 3rd item
-        contact: genData[3]           // Contact is the 4th item
+        name: data[0], 
+        gender: data[1],
+        age: data[2].toString(), // Convert BigInt to string
+        contact: data[3].toString()
       });
 
-      // NOTE: We haven't built the "Add Medical History" feature in Solidity yet,
-      // so we will set these to defaults for now to stop the crash.
       setEmergencyData({
-        blood: "N/A",
-        allergies: "No Allergies Recorded",
-        deficiency: "None",
-        chronic: "None"
+        blood: data[4] || "N/A",
+        allergies: data[5] || "None",
+        deficiency: data[6] || "None",
+        chronic: data[7] || "None"
       });
 
     } catch (error) {
       console.error("Blockchain Fetch Error:", error);
-      // toast.error("Could not fetch medical records."); // Mute this for now if it gets annoying
     }
   };
 
