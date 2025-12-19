@@ -77,6 +77,7 @@ const RegistrationPage = () => {
            formData.name, 
            Number(formData.age), 
            formData.gender,
+           Number(formData.contact)
         );
         
       } else {

@@ -63,12 +63,14 @@ contract MediVault {
         registeredHospitals[msg.sender] = true;
     }
 
-    function registerPatient(string memory _name, uint256 _age, string memory _gender) external {
+// UPDATED: Now accepts Contact Number
+    function registerPatient(string memory _name, uint256 _age, string memory _gender, uint256 _contactNumber) external {
         require(!registeredPatients[msg.sender], "Patient already registered");
         registeredPatients[msg.sender] = true;
         patients[msg.sender].patientName = _name;
         patients[msg.sender].age = _age;
         patients[msg.sender].gender = _gender;
+        patients[msg.sender].contactNumber = _contactNumber; 
     }
 
     // ACCESS CONTROL
