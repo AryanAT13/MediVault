@@ -1,57 +1,94 @@
-import React, { useState, useContext } from 'react';
-import { WalletContext } from '../context/WalletContext'; // Access the brain
-import { useNavigate } from 'react-router-dom'; // To redirect after success
+import React, { useState, useContext, useEffect } from 'react';
+import { WalletContext } from '../context/WalletContext';
+import { useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
 import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify'; // Slick notifications
 import 'react-toastify/dist/ReactToastify.css';
+import { User, Activity, Loader, ShieldCheck } from 'lucide-react';
 
 const RegistrationPage = () => {
-  const { account, contract, connectWallet } = useContext(WalletContext);
+  const { connectWallet, account, contract } = useContext(WalletContext);
   const navigate = useNavigate();
-  
+
   const [userType, setUserType] = useState('patient'); // 'patient' or 'hospital'
-  const [loading, setLoading] = useState(false);
-  
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     age: '',
-    gender: 'Male', // Default
-    contactInfo: ''
+    gender: 'Male',
+    contact: '' // Added contact field
   });
+  const [loading, setLoading] = useState(false);
+  const [checkingUser, setCheckingUser] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // --- AUTO-LOGIN LOGIC ---
+  useEffect(() => {
+    if (account && contract) {
+      checkIfUserExists();
+    }
+  }, [account, contract]);
+
+  const checkIfUserExists = async () => {
+    setCheckingUser(true);
+    try {
+      // 1. Check if Patient
+      const isPatient = await contract.registeredPatients(account);
+      if (isPatient) {
+        toast.success("Welcome back, Patient!");
+        navigate('/userpage');
+        return;
+      }
+
+      // 2. Check if Hospital
+      const isHospital = await contract.registeredHospitals(account);
+      if (isHospital) {
+        toast.success("Welcome back, Doctor!");
+        navigate('/hospitalpage');
+        return;
+      }
+
+      // 3. If neither, stay here to Register
+      setCheckingUser(false);
+
+    } catch (error) {
+      console.error("Login Check Failed:", error);
+      setCheckingUser(false);
+    }
   };
+  // ------------------------
 
-  // --- THE CORE LOGIC ---
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!account) return toast.error("Please connect your wallet first!");
-    if (!contract) return toast.error("Contract not loaded. Reload page.");
+    if (!contract) {
+      toast.error("Wallet not connected!");
+      return;
+    }
 
     setLoading(true);
-
     try {
-      // 1. BLOCKCHAIN WRITE
-      // We send the transaction to the Smart Contract
       let tx;
+      
       if (userType === 'patient') {
-        // Note: We parse Age as a number because Solidity expects uint256
+        // PATIENT REGISTRATION
+        console.log("Registering Patient:", formData.name);
+        
+        // 1. Blockchain Transaction (Smart Contract)
+        // Note: We are passing age and contact as simple numbers/strings
         tx = await contract.registerPatient(
-            formData.name, 
-            parseInt(formData.age), 
-            formData.gender
+           formData.name, 
+           Number(formData.age), 
+           formData.gender,
         );
+        
       } else {
+        // HOSPITAL REGISTRATION
+        console.log("Registering Hospital");
         tx = await contract.registerHospital();
       }
 
-      toast.info("Transaction sent... waiting for confirmation.");
-      await tx.wait(); // Wait for the block to be mined
+      // Wait for Blockchain Confirmation
+      await tx.wait();
 
-      // 2. DATABASE WRITE (The Sync)
-      // Once blockchain confirms, we save to MongoDB so search works fast
+      // 2. Database Backup (MongoDB)
       await axios.post('/api/register', {
         walletAddress: account,
         userType: userType
@@ -59,130 +96,168 @@ const RegistrationPage = () => {
 
       toast.success("Registration Successful!");
       
-      // Redirect to the dashboard
-      setTimeout(() => {
-        navigate(userType === 'patient' ? '/userpage' : '/hospitalpage');
-        window.location.reload(); // Force refresh to update Role in Context
-      }, 2000);
+      // Redirect based on type
+      if (userType === 'patient') navigate('/userpage');
+      else navigate('/hospitalpage');
 
     } catch (error) {
       console.error("Registration Error:", error);
-      // Nice error handling
-      if (error.reason) toast.error(`Blockchain Error: ${error.reason}`);
-      else if (error.response) toast.error(`Server Error: ${error.response.data.msg}`);
-      else toast.error("Registration failed. See console.");
+      // Nice error handling for the user
+      if (error.reason && error.reason.includes("already registered")) {
+        toast.error("You are already registered! Redirecting...");
+        checkIfUserExists(); // Force redirect
+      } else {
+        toast.error("Registration Failed: " + (error.reason || error.message));
+      }
     }
-
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
       <ToastContainer theme="dark" />
       
-      <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-700">
+      {/* Background Ambience */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-0 -right-4 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
+
+      <div className="bg-slate-800/50 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-slate-700 w-full max-w-md relative z-10">
         
         {/* Header */}
-        <div className="bg-blue-600 p-6 text-center">
-          <h1 className="text-3xl font-bold text-white tracking-wider">MediVault</h1>
-          <p className="text-blue-100 mt-2">Decentralized Medical Identity</p>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">MediVault</h1>
+          <p className="text-blue-200 font-light">Decentralized Medical Records</p>
         </div>
 
-        {/* Wallet Checker */}
+        {/* Wallet Connection State */}
         {!account ? (
-          <div className="p-8 text-center">
-             <p className="text-gray-400 mb-4">You need to connect your wallet to register.</p>
-             <button 
-                onClick={connectWallet}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded transition"
-             >
-                Connect MetaMask
-             </button>
+          <div className="text-center py-10">
+            <div className="bg-slate-700/50 p-6 rounded-2xl mb-6 border border-dashed border-slate-600">
+               <ShieldCheck size={48} className="mx-auto text-blue-400 mb-4" />
+               <p className="text-slate-300">Connect your wallet to access your secure medical history.</p>
+            </div>
+            <button 
+              onClick={connectWallet}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 group"
+            >
+              Connect Wallet 
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+          </div>
+        ) : checkingUser ? (
+          /* LOADING STATE (Checking Login) */
+          <div className="text-center py-12">
+            <Loader className="animate-spin mx-auto text-blue-400 mb-4" size={40} />
+            <p className="text-slate-300">Verifying Identity...</p>
           </div>
         ) : (
-          <div className="p-8">
+          /* REGISTRATION FORM (Only shown if NOT registered) */
+          <form onSubmit={handleRegister} className="space-y-6">
             
-            {/* Tabs */}
-            <div className="flex bg-slate-700 rounded-lg p-1 mb-6">
-              <button 
-                className={`flex-1 py-2 rounded-md font-medium transition ${userType === 'patient' ? 'bg-blue-500 text-white' : 'text-gray-400 hover:text-white'}`}
+            {/* User Type Toggle */}
+            <div className="grid grid-cols-2 gap-2 bg-slate-700/50 p-1 rounded-xl">
+              <button
+                type="button"
+                className={`py-2 rounded-lg text-sm font-medium transition-all ${userType === 'patient' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
                 onClick={() => setUserType('patient')}
               >
-                Patient
+                <div className="flex items-center justify-center gap-2">
+                  <User size={16} /> Patient
+                </div>
               </button>
-              <button 
-                className={`flex-1 py-2 rounded-md font-medium transition ${userType === 'hospital' ? 'bg-blue-500 text-white' : 'text-gray-400 hover:text-white'}`}
+              <button
+                type="button"
+                className={`py-2 rounded-lg text-sm font-medium transition-all ${userType === 'hospital' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
                 onClick={() => setUserType('hospital')}
               >
-                Hospital
+                <div className="flex items-center justify-center gap-2">
+                  <Activity size={16} /> Hospital
+                </div>
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleRegister} className="space-y-4">
-              
-              {userType === 'patient' && (
-                <>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Full Name</label>
-                    <input 
-                      name="name" type="text" required
-                      className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:outline-none focus:border-blue-500"
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm text-gray-400 mb-1">Age</label>
-                      <input 
-                        name="age" type="number" required
-                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:outline-none focus:border-blue-500"
-                        onChange={handleChange}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm text-gray-400 mb-1">Gender</label>
-                      <select 
-                        name="gender" 
-                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:outline-none focus:border-blue-500"
-                        onChange={handleChange}
-                      >
-                        <option>Male</option>
-                        <option>Female</option>
-                        <option>Other</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Contact Number</label>
-                    <input 
-                      name="contactInfo" type="text" required
-                      className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:outline-none focus:border-blue-500"
-                      onChange={handleChange}
-                    />
-                  </div>
-                </>
-              )}
-
-              {userType === 'hospital' && (
-                <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded text-yellow-200 text-sm text-center">
-                  Hospitals are registered by address only. No extra details required for demo.
+            {/* Inputs (Patient Only) */}
+            {userType === 'patient' && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div>
+                  <label className="block text-slate-400 text-sm mb-1 ml-1">Full Name</label>
+                  <input 
+                    required 
+                    type="text" 
+                    placeholder="John Doe"
+                    className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  />
                 </div>
-              )}
 
-              <button 
-                type="submit" 
-                disabled={loading}
-                className={`w-full py-3 rounded-lg font-bold text-white transition ${loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-              >
-                {loading ? 'Processing Transaction...' : 'Register Now'}
-              </button>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-400 text-sm mb-1 ml-1">Age</label>
+                    <input 
+                      required 
+                      type="number" 
+                      placeholder="25"
+                      className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      value={formData.age}
+                      onChange={(e) => setFormData({...formData, age: e.target.value})}
+                    />
+                  </div>
+                   <div>
+                    <label className="block text-slate-400 text-sm mb-1 ml-1">Gender</label>
+                    <select 
+                      className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      value={formData.gender}
+                      onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                    >
+                      <option>Male</option>
+                      <option>Female</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                </div>
 
-            </form>
-          </div>
+                <div>
+                  <label className="block text-slate-400 text-sm mb-1 ml-1">Contact (Mobile)</label>
+                  <input 
+                    required 
+                    type="number" 
+                    placeholder="9876543210"
+                    className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    value={formData.contact}
+                    onChange={(e) => setFormData({...formData, contact: e.target.value})}
+                  />
+                </div>
+              </div>
+            )}
+
+            {userType === 'hospital' && (
+              <div className="bg-purple-900/20 p-4 rounded-xl border border-purple-500/30 text-center animate-in fade-in zoom-in duration-300">
+                <p className="text-purple-200 text-sm">
+                  Hospital registration is simplified. Your wallet address will be your official identifier on the blockchain.
+                </p>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button 
+              disabled={loading}
+              className="w-full bg-white text-slate-900 font-bold py-4 rounded-xl hover:bg-slate-200 transition-all shadow-lg flex items-center justify-center gap-2 mt-4"
+            >
+              {loading ? <Loader className="animate-spin" /> : "Complete Registration"}
+            </button>
+            
+          </form>
         )}
+        
+        {/* Footer */}
+        <div className="mt-6 text-center">
+          <p className="text-slate-500 text-xs font-mono">Connected: {account ? `${account.substring(0, 6)}...${account.substring(38)}` : "No"}</p>
+        </div>
+
       </div>
     </div>
   );

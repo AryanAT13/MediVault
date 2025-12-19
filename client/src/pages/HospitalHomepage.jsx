@@ -3,7 +3,8 @@ import { WalletContext } from '../context/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
-import { Search, ShieldAlert, ShieldCheck, FileText, User, Activity, Lock, LogOut } from 'lucide-react';
+import { Search, ShieldAlert, ShieldCheck, FileText, User, Activity, Lock, LogOut, ExternalLink } from 'lucide-react';
+import PdfUpload from './PdfUpload';
 
 const HospitalHomepage = () => {
     const { account, contract, connectWallet } = useContext(WalletContext);
@@ -14,6 +15,7 @@ const HospitalHomepage = () => {
     const [patientData, setPatientData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [accessStatus, setAccessStatus] = useState('unknown'); // 'granted', 'denied', 'unknown'
+    const [patientReports, setPatientReports] = useState([]);
 
     // --- 1. SEARCH PATIENT ---
     const handleSearch = async (e) => {
@@ -53,21 +55,22 @@ const HospitalHomepage = () => {
         setLoading(false);
     };
 
-    // --- 2. FETCH PATIENT DETAILS (Only if Access Granted) ---
+    // --- 2. FETCH PATIENT DETAILS ---
     const fetchPatientDetails = async (patientAddress) => {
         try {
-            // Fetch Basic Data: patients(address)
+            // Fetch Basic Data
             const data = await contract.patients(patientAddress);
-
             setPatientData({
                 name: data[0],
-                gender: data[1],
-                age: data[2].toString(),
-                contact: data[3].toString(),
-                blood: data[4] || "N/A",
-                allergies: data[5] || "None",
+                // ... (Keep existing mapping) ...
                 chronic: data[7] || "None"
             });
+
+            // NEW: Fetch Reports
+            // Solidity: getReports(address) returns Report[]
+            const reports = await contract.getReports(patientAddress);
+            console.log("Reports fetched:", reports);
+            setPatientReports(reports);
 
         } catch (error) {
             console.error("Fetch Error:", error);
@@ -217,13 +220,44 @@ const HospitalHomepage = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 opacity-50 cursor-not-allowed">
+                            {/* REPLACES THE "Past Reports (Coming Soon)" DIV */}
+
+                            {/* Uploader Section */}
+                            <div className="mb-8">
+                                <PdfUpload
+                                    patientAddress={searchAddress}
+                                    onUploadSuccess={() => fetchPatientDetails(searchAddress)}
+                                />
+                            </div>
+
+                            {/* Reports List */}
+                            <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
                                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                    <FileText className="text-blue-400" /> Past Reports (Coming Soon)
+                                    <FileText className="text-blue-400" /> Medical Reports
                                 </h3>
-                                <p className="text-sm text-slate-500">
-                                    X-Rays, Lab Reports, and Prescriptions will appear here once the IPFS module is fully integrated.
-                                </p>
+
+                                {patientReports.length === 0 ? (
+                                    <p className="text-slate-500 italic">No reports found for this patient.</p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {patientReports.map((report, index) => (
+                                            <div key={index} className="bg-slate-900 p-4 rounded-lg flex justify-between items-center border border-slate-700 hover:border-blue-500 transition">
+                                                <div>
+                                                    <p className="font-bold text-white">{report.category || "General Report"}</p>
+                                                    <p className="text-xs text-slate-500">{report.timeStamp}</p>
+                                                </div>
+                                                <a
+                                                    href={`http://localhost:5001/uploads/${report.cID}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-sm font-bold"
+                                                >
+                                                    View <ExternalLink size={14} />
+                                                </a>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

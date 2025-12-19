@@ -3,9 +3,28 @@ const express = require('express');
 const cors = require('cors'); // Ensure you have this: npm install cors
 const connectDB = require('./db');
 const User = require('./models/User'); 
-
 const app = express();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
+// Configure Local Storage (Simulating IPFS)
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = './uploads';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        // We use the timestamp to make the filename unique
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Serve uploaded files statically (so we can view them)
+app.use('/uploads', express.static('uploads'));
 // --- THE FIX: BRUTE FORCE CORS ---
 // We place this at the very top to catch every request
 app.use(cors({
@@ -46,14 +65,20 @@ app.get('/api/check-user/:address', async (req, res) => {
     }
 });
 
-// 2. Register a New User
+// 2. Register a New User (Updated for Sync Issues)
 app.post('/api/register', async (req, res) => {
-    console.log("📝 Register Request Received:", req.body); // Debug log
+    console.log("📝 Register Request Received:", req.body);
     try {
         const { walletAddress, userType } = req.body;
         
         let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
-        if (user) return res.status(400).json({ msg: 'User already registered' });
+        
+        if (user) {
+            // FIX: If user exists, don't error out. Just return success.
+            // This fixes the issue where Blockchain was reset but DB wasn't.
+            console.log("⚠️ User already in DB. Syncing...");
+            return res.json({ msg: 'User already registered (Synced)', user });
+        }
 
         user = new User({
             walletAddress: walletAddress.toLowerCase(),
@@ -98,6 +123,47 @@ app.post('/api/request-access', async (req, res) => {
             await patient.save();
         }
         res.json({ msg: 'Request sent' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 5. Upload File Route
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+        // In a real Web3 app, you would send 'req.file.path' to Pinata here.
+        // For now, we simulate IPFS by returning the local filename as the "Hash".
+        const fakeIpfsHash = req.file.filename; 
+        
+        console.log("📂 File Uploaded:", fakeIpfsHash);
+        
+        res.json({ 
+            success: true, 
+            ipfsHash: fakeIpfsHash, 
+            timestamp: new Date().toISOString() 
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- FIX: Remove Notification Route ---
+app.post('/api/resolve-request', async (req, res) => {
+    try {
+        const { patientAddress, hospitalAddress } = req.body;
+        // Find the patient
+        const user = await User.findOne({ walletAddress: patientAddress.toLowerCase() });
+        
+        if (user) {
+            // Filter out the request from the specific hospital
+            user.pendingRequests = user.pendingRequests.filter(
+                req => req.hospitalAddress.toLowerCase() !== hospitalAddress.toLowerCase()
+            );
+            await user.save();
+        }
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
