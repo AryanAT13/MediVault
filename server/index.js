@@ -1,4 +1,5 @@
-require('dotenv').config(); // Load keys from .env
+require('dotenv').config(); 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -154,6 +155,60 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     } catch (error) {
         console.error("❌ IPFS Upload Error:", error);
         res.status(500).json({ error: "Failed to upload to IPFS" });
+    }
+});
+
+// --- 5. AI ANALYSIS ROUTE (Gemini) ---
+app.post('/api/analyze-report', async (req, res) => {
+    try {
+        const { cid, category } = req.body;
+        
+        console.log("🤖 AI Analyzing:", category, cid);
+
+        // 1. Fetch the file from IPFS (Pinata Gateway)
+        const fileUrl = `https://gateway.pinata.cloud/ipfs/${cid}`;
+        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        const fileData = Buffer.from(response.data);
+        const mimeType = response.headers['content-type'];
+
+        // 2. Initialize Gemini
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // 3. Construct the Prompt based on Category
+        let prompt = "You are a helpful medical assistant. Analyze this medical document for a patient. ";
+        
+        if (category === "X-Ray") {
+            prompt += "Identify the body part. If there is a fracture or issue, explain where it is, what it means, and typical healing time. Keep it simple.";
+        } else if (category === "Lab Report") {
+            prompt += "Summarize the key findings. Point out any high/low levels and explain what they mean for health in simple terms.";
+        } else if (category === "Prescription") {
+            prompt += "List the medicines prescribed. Explain when to take them (morning/night) if mentioned, and what they treat.";
+        } else {
+            prompt += "Summarize the contents of this medical document in simple, reassuring language.";
+        }
+        
+        prompt += " \n\nIMPORTANT: End with a disclaimer that you are an AI and they should consult a doctor.";
+
+        // 4. Send to Gemini
+        const result = await model.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    data: fileData.toString("base64"),
+                    mimeType: mimeType
+                }
+            }
+        ]);
+
+        const text = result.response.text();
+        console.log("✅ AI Analysis Complete");
+        
+        res.json({ analysis: text });
+
+    } catch (error) {
+        console.error("❌ AI Error:", error);
+        res.status(500).json({ error: "AI could not analyze this file. (It might be too large or complex)" });
     }
 });
 
