@@ -173,7 +173,7 @@ const UserSiteHomepage = () => {
                     <span className="bg-blue-500/20 text-blue-300 text-xs font-bold px-2 py-1 rounded uppercase">{report.category}</span>
                     <p className="text-xs text-slate-500 mt-2">{new Date(report.timeStamp).toLocaleDateString()}</p>
                   </div>
-                  <a href={`http://localhost:5001/uploads/${report.cID}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-white"><ExternalLink size={20} /></a>
+                  <a href={`https://gateway.pinata.cloud/ipfs/${report.cID}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-white"><ExternalLink size={20} /></a>
                 </div>
               ))}
             </div>

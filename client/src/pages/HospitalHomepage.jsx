@@ -125,7 +125,7 @@ const HospitalHomepage = () => {
                     {patientReports.map((report, index) => (
                       <div key={index} className="bg-slate-900 p-4 rounded-lg flex justify-between items-center border border-slate-700">
                         <div><p className="font-bold text-white">{report.category}</p><p className="text-xs text-slate-500">{new Date(report.timeStamp).toLocaleDateString()}</p></div>
-                        <a href={`http://localhost:5001/uploads/${report.cID}`} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-sm font-bold">View <ExternalLink size={14} /></a>
+                        <a href={`https://gateway.pinata.cloud/ipfs/${report.cID}`} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-sm font-bold">View <ExternalLink size={14} /></a>
                       </div>
                     ))}
                   </div>
