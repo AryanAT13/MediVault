@@ -3,20 +3,29 @@ import { WalletContext } from '../context/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
-import { User, Activity, FileText, Bell, ShieldCheck, ShieldAlert, LogOut, Edit2, ExternalLink, Clock } from 'lucide-react';
+import { 
+  User, Activity, FileText, Bell, ShieldCheck, LogOut, 
+  Edit2, ExternalLink, Clock, Sparkles, X, Loader 
+} from 'lucide-react';
 import UpdateProfileModal from '../components/UpdateProfileModal';
 
 const UserSiteHomepage = () => {
   const { account, contract, connectWallet } = useContext(WalletContext);
   const navigate = useNavigate();
 
+  // --- STATE ---
   const [generalData, setGeneralData] = useState({ name: 'Loading...', age: '', gender: '', contact: '' });
   const [emergencyData, setEmergencyData] = useState({ blood: 'N/A', allergies: 'None', deficiency: 'None', chronic: 'None' });
   const [notifications, setNotifications] = useState([]);
   const [patientReports, setPatientReports] = useState([]);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
 
-  // FETCH DATA
+  // AI State
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiResult, setAiResult] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // --- FETCH DATA ---
   const fetchBlockchainData = async () => {
     if (!contract || !account) return;
     try {
@@ -55,6 +64,7 @@ const UserSiteHomepage = () => {
     }
   }, [account, contract]);
 
+  // --- ACTIONS ---
   const handleGrantAccess = async (hospitalAddress, hospitalName) => {
     if (!contract) return;
     try {
@@ -67,12 +77,74 @@ const UserSiteHomepage = () => {
     } catch (error) { toast.error("Transaction Failed"); }
   };
 
+  const analyzeWithAI = async (cid, category) => {
+    setAiModalOpen(true);
+    setAiResult("");
+    setIsAnalyzing(true);
+    
+    try {
+      const res = await axios.post('/api/analyze-report', { cid, category });
+      setAiResult(res.data.analysis);
+    } catch (error) {
+      console.error(error);
+      setAiResult("Sorry, I couldn't analyze this file. It might be an unsupported format or too complex.");
+    }
+    setIsAnalyzing(false);
+  };
+
   const handleLogout = () => { navigate('/'); window.location.reload(); };
 
   return (
     <div className="min-h-screen bg-slate-900 text-white font-sans selection:bg-blue-500 selection:text-white">
       <ToastContainer theme="dark" />
+      
+      {/* UPDATE MODAL */}
       {showUpdateModal && <UpdateProfileModal onClose={() => setShowUpdateModal(false)} onUpdateSuccess={fetchBlockchainData} />}
+
+      {/* AI ANALYSIS MODAL */}
+      {aiModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-slate-900 rounded-2xl w-full max-w-2xl border border-purple-500/30 shadow-2xl flex flex-col max-h-[80vh]">
+            
+            {/* Header */}
+            <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-purple-900/20 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-500 p-2 rounded-lg text-white">
+                   <Sparkles size={24} />
+                </div>
+                <h3 className="text-xl font-bold text-white">MediVault AI Analysis</h3>
+              </div>
+              <button onClick={() => setAiModalOpen(false)} className="text-slate-400 hover:text-white transition">
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-8 overflow-y-auto custom-scrollbar">
+              {isAnalyzing ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <Loader className="animate-spin text-purple-500" size={48} />
+                  <p className="text-slate-300 animate-pulse">Reading medical document...</p>
+                  <p className="text-slate-500 text-sm">Analyzing X-Rays, Lab Data, and Prescriptions.</p>
+                </div>
+              ) : (
+                <div className="prose prose-invert max-w-none">
+                  <div className="text-slate-200 text-lg leading-relaxed whitespace-pre-wrap">
+                    {aiResult}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-700 bg-slate-900/50 rounded-b-2xl text-center">
+              <p className="text-xs text-slate-500 uppercase tracking-widest">
+                AI Generated • Consult a Doctor for medical advice
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* NAVBAR */}
       <nav className="bg-slate-800/50 backdrop-blur-md border-b border-slate-700 px-8 py-4 flex justify-between items-center sticky top-0 z-50">
@@ -88,7 +160,7 @@ const UserSiteHomepage = () => {
         </div>
       </nav>
 
-      {/* MAIN LAYOUT: PROFILE + NOTIFICATIONS */}
+      {/* MAIN LAYOUT */}
       <main className="max-w-7xl mx-auto p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           
@@ -135,7 +207,7 @@ const UserSiteHomepage = () => {
           </div>
         </div>
 
-        {/* THE 4-BOX GRID (Restored) */}
+        {/* 4-BOX GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
           
           {/* BOX 1: EMERGENCY DATA */}
@@ -149,7 +221,7 @@ const UserSiteHomepage = () => {
             </div>
           </div>
 
-          {/* BOX 2: TIMELINE (Restored!) */}
+          {/* BOX 2: TIMELINE */}
           <div className="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700 h-64 relative overflow-hidden group">
              <div className="absolute -right-6 -bottom-6 bg-purple-500/10 w-32 h-32 rounded-full group-hover:bg-purple-500/20 transition"></div>
              <h2 className="text-purple-400 text-sm uppercase tracking-widest mb-6 flex items-center gap-2"><Clock size={18}/> Health Timeline</h2>
@@ -163,17 +235,31 @@ const UserSiteHomepage = () => {
              </div>
           </div>
 
-          {/* BOX 3: MEDICAL REPORTS */}
+          {/* BOX 3: MEDICAL REPORTS (With AI) */}
           <div className="md:col-span-2 bg-slate-800 rounded-2xl p-6 border border-slate-700">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><FileText className="text-blue-400" /> Medical Reports Repository</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {patientReports.length === 0 ? <p className="text-slate-500 text-sm">No reports uploaded.</p> : patientReports.map((report, index) => (
-                <div key={index} className="bg-slate-900 p-4 rounded-xl border border-slate-700 hover:border-blue-500 transition flex justify-between items-center">
+                <div key={index} className="bg-slate-900 p-4 rounded-xl border border-slate-700 hover:border-blue-500 transition flex justify-between items-center group">
                   <div>
                     <span className="bg-blue-500/20 text-blue-300 text-xs font-bold px-2 py-1 rounded uppercase">{report.category}</span>
                     <p className="text-xs text-slate-500 mt-2">{new Date(report.timeStamp).toLocaleDateString()}</p>
                   </div>
-                  <a href={`https://gateway.pinata.cloud/ipfs/${report.cID}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-white"><ExternalLink size={20} /></a>
+                  <div className="flex items-center">
+                    {/* View Button */}
+                    <a href={`https://gateway.pinata.cloud/ipfs/${report.cID}`} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-white p-2" title="View File">
+                      <ExternalLink size={20} />
+                    </a>
+                    
+                    {/* AI Button */}
+                    <button 
+                      onClick={() => analyzeWithAI(report.cID, report.category)}
+                      className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition ml-2 relative"
+                      title="Explain with AI"
+                    >
+                      <Sparkles size={18} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -184,4 +270,5 @@ const UserSiteHomepage = () => {
     </div>
   );
 };
+
 export default UserSiteHomepage;

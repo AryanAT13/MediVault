@@ -158,57 +158,71 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-// --- 5. AI ANALYSIS ROUTE (Gemini) ---
+// --- 5. AI ANALYSIS ROUTE (Final Polish) ---
 app.post('/api/analyze-report', async (req, res) => {
     try {
         const { cid, category } = req.body;
-        
         console.log("🤖 AI Analyzing:", category, cid);
 
-        // 1. Fetch the file from IPFS (Pinata Gateway)
-        const fileUrl = `https://gateway.pinata.cloud/ipfs/${cid}`;
-        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-        const fileData = Buffer.from(response.data);
-        const mimeType = response.headers['content-type'];
+        const gateways = [
+            `https://gateway.pinata.cloud/ipfs/${cid}`,
+            `https://ipfs.io/ipfs/${cid}`
+        ];
 
-        // 2. Initialize Gemini
+        let response;
+        let fileData;
+        let mimeType;
+
+        for (const url of gateways) {
+            try {
+                console.log(`⬇️ Trying gateway: ${url}`);
+                response = await axios.get(url, { 
+                    responseType: 'arraybuffer',
+                    timeout: 30000 
+                });
+                if (response.status === 200) break;
+            } catch (err) {
+                console.log(`⚠️ Gateway failed: ${url}`);
+            }
+        }
+
+        if (!response) throw new Error("Could not fetch file from any IPFS gateway.");
+
+        fileData = Buffer.from(response.data);
+        mimeType = response.headers['content-type'];
+        console.log("📄 File fetched. Type:", mimeType);
+
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-        // 3. Construct the Prompt based on Category
-        let prompt = "You are a helpful medical assistant. Analyze this medical document for a patient. ";
-        
+        let prompt = `You are a medical AI assistant. Analyze this ${category} for a patient. `;
+
         if (category === "X-Ray") {
-            prompt += "Identify the body part. If there is a fracture or issue, explain where it is, what it means, and typical healing time. Keep it simple.";
+            prompt += "Identify the body part. Analyze for fractures, dislocations, or abnormalities. If an issue is found, estimate typical healing time.";
         } else if (category === "Lab Report") {
-            prompt += "Summarize the key findings. Point out any high/low levels and explain what they mean for health in simple terms.";
+            prompt += "Extract key values. Flag any abnormal (High/Low) results and briefly explain their significance in plain English.";
         } else if (category === "Prescription") {
-            prompt += "List the medicines prescribed. Explain when to take them (morning/night) if mentioned, and what they treat.";
+            prompt += "Extract the Patient Name, Date, and Doctor Name if visible. List every medication, dosage, frequency, and instruction found.";
         } else {
-            prompt += "Summarize the contents of this medical document in simple, reassuring language.";
+            prompt += "Summarize the key medical insights from this document.";
         }
         
-        prompt += " \n\nIMPORTANT: End with a disclaimer that you are an AI and they should consult a doctor.";
+        prompt += "\n\nSTRICT OUTPUT RULES:";
+        prompt += "\n2. Do NOT include a disclaimer at the end.";
+        prompt += "\n3. Use Markdown (bolding keys, bullet points) for clear readability.";
 
-        // 4. Send to Gemini
         const result = await model.generateContent([
             prompt,
-            {
-                inlineData: {
-                    data: fileData.toString("base64"),
-                    mimeType: mimeType
-                }
-            }
+            { inlineData: { data: fileData.toString("base64"), mimeType: mimeType } }
         ]);
 
         const text = result.response.text();
-        console.log("✅ AI Analysis Complete");
-        
+        console.log("✅ AI Analysis Success");
         res.json({ analysis: text });
 
     } catch (error) {
-        console.error("❌ AI Error:", error);
-        res.status(500).json({ error: "AI could not analyze this file. (It might be too large or complex)" });
+        console.error("❌ AI Error:", error.message);
+        res.status(500).json({ error: "Analysis timed out or failed. Please try again." });
     }
 });
 
