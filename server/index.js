@@ -158,13 +158,13 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-// --- 5. AI ANALYSIS ROUTE (Robust Gateway + Correct Model) ---
+// --- 5. AI ANALYSIS ROUTE (With Retry Logic) ---
 app.post('/api/analyze-report', async (req, res) => {
     try {
         const { cid, category } = req.body;
         console.log("🤖 AI Analyzing:", category, cid);
 
-        // 1. GATEWAY STRATEGY (Expanded List)
+        // --- STEP 1: FETCH FILE (Gateways) ---
         const gateways = [
             `https://gateway.pinata.cloud/ipfs/${cid}`,
             `https://cloudflare-ipfs.com/ipfs/${cid}`,
@@ -176,139 +176,84 @@ app.post('/api/analyze-report', async (req, res) => {
         let fileData;
         let mimeType;
 
-        // Loop through gateways until one works
         for (const url of gateways) {
             try {
                 console.log(`⬇️ Trying gateway: ${url}`);
-                response = await axios.get(url, {
+                response = await axios.get(url, { 
                     responseType: 'arraybuffer',
-                    timeout: 45000
+                    timeout: 45000 
                 });
                 if (response.status === 200) {
-                    console.log(`✅ Success via ${url}`);
-                    break;
+                    console.log(`✅ File fetched from ${url}`);
+                    break; 
                 }
             } catch (err) {
-                console.log(`⚠️ Gateway failed: ${url}`);
+                // Sssh, keep trying silently
             }
         }
 
-        if (!response) {
-            throw new Error("Could not fetch file from any IPFS gateway.");
-        }
+        if (!response) throw new Error("Could not fetch file from any IPFS gateway.");
 
         fileData = Buffer.from(response.data);
         mimeType = response.headers['content-type'];
-        console.log("📄 File fetched. Type:", mimeType);
 
-        // 2. Initialize Gemini
+        // --- STEP 2: PREPARE AI ---
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
+        
+        // Use the model version that worked for you. 
+        // If 2.5 keeps failing, swap this string to "gemini-1.5-flash"
+        const MODEL_NAME = "gemini-2.5-flash"; 
+        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-        // 3. Construct Enhanced Medical Prompt
-        let prompt = `
-You are a highly accurate medical AI assistant.
-Analyze the provided ${category} and explain it in a way a non-medical patient can easily understand.
+        let prompt = `You are a medical AI assistant. Analyze this ${category}. `;
+        
+        if (category === "X-Ray") prompt += "Identify the body part. Analyze for fractures/abnormalities. Estimate healing time.";
+        else if (category === "Lab Report") prompt += "Extract key values. Flag abnormal results and explain significance.";
+        else if (category === "Prescription") prompt += "Extract Patient/Doctor Name. List medications, dosage, frequency, instructions.";
+        else prompt += "Summarize key medical insights.";
 
-CORE RULES:
-• Extract ONLY what is clearly visible in the document
-• Do NOT guess, infer, or invent missing details
-• If something is unclear or unreadable, explicitly state "**Not visible or unclear**"
-• Use simple, reassuring, patient-friendly language
-`;
+        prompt += "\n\nSTRICT OUTPUT RULES:";
+        prompt += "\n2. Do NOT include a disclaimer.";
+        prompt += "\n3. Use Markdown.";
 
-        if (category === "X-Ray") {
-            prompt += `
-TASK (X-RAY):
-• Identify the body part and side (left/right) if visible
-• Identify fractures, dislocations, degenerative changes, or other abnormalities
+        // --- STEP 3: THE RETRY LOOP (Fix for 503 Overloaded) ---
+        let text = null;
+        let attempts = 0;
+        const maxAttempts = 3;
 
-IF AN ISSUE IS FOUND:
-• Explain what it means in simple language
-• Mention whether the finding is commonly acute or chronic
-• Estimate typical healing or recovery time ranges (only if commonly known)
-
-IF NO ABNORMALITY IS VISIBLE:
-• Clearly state that no obvious abnormality is seen
-`;
-        }
-        else if (category === "Lab Report") {
-            prompt += `
-TASK (LAB REPORT):
-For each test, extract:
-• Test name
-• Reported value
-• Reference range (if shown)
-• Status: Normal / High / Low
-
-FOR ABNORMAL RESULTS:
-• Briefly explain what the result may indicate in plain English
-• Mention common and non-alarming causes first when possible
-
-Group results by test category if applicable.
-`;
-        }
-        else if (category === "Prescription") {
-            prompt += `
-TASK (PRESCRIPTION):
-Extract the following IF VISIBLE:
-• Patient Name
-• Date
-• Prescribing Doctor Name
-
-For EACH medication, list:
-• Medication name
-• Strength
-• Dosage
-• Frequency
-• Duration (if mentioned)
-• Special instructions
-
-Clearly mark any missing or unreadable information.
-`;
-        }
-        else {
-            prompt += `
-TASK (OTHER MEDICAL DOCUMENT):
-• Identify the document type if possible
-• Summarize key medical findings
-• Highlight important instructions, results, or follow-up actions
-• Mention anything that may require patient attention
-`;
-        }
-
-        // 4. Strict Output Rules
-        prompt += `
-OUTPUT FORMAT RULES:
-1. Start directly with the data (no titles like "Analysis of...")
-2. Use Markdown with clear section headers and bullet points
-3. Bold all medical terms, values, and key findings
-4. Do NOT include legal or medical disclaimers
-5. Do NOT provide diagnoses beyond what is explicitly stated
-6. If information is missing or unclear, say "**Not visible or unclear**"
-`;
-
-        // 5. Send to Gemini
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    data: fileData.toString("base64"),
-                    mimeType: mimeType
+        while (attempts < maxAttempts && !text) {
+            try {
+                attempts++;
+                console.log(`🧠 AI Attempt ${attempts}/${maxAttempts}...`);
+                
+                const result = await model.generateContent([
+                    prompt,
+                    { inlineData: { data: fileData.toString("base64"), mimeType: mimeType } }
+                ]);
+                text = result.response.text();
+            
+            } catch (aiError) {
+                console.error(`⚠️ Attempt ${attempts} failed: ${aiError.message}`);
+                
+                // If it's a 503 (Overloaded), wait 2 seconds and try again
+                if (aiError.message.includes("503") || aiError.message.includes("overloaded")) {
+                    console.log("⏳ Google is busy. Waiting 2 seconds...");
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                } else {
+                    // If it's a different error (like 400 Bad Request), stop trying
+                    break;
                 }
             }
-        ]);
+        }
 
-        const text = result.response.text();
+        if (!text) throw new Error(`AI Service Overloaded after ${maxAttempts} attempts.`);
+
         console.log("✅ AI Analysis Success");
-
         res.json({ analysis: text });
 
     } catch (error) {
-        console.error("❌ AI Error:", error.message);
-        res.status(500).json({
-            error: "Analysis failed. IPFS network may be busy or the file is unsupported."
-        });
+        console.error("❌ Final Error:", error.message);
+        res.status(500).json({ error: "System is overloaded. Please wait 1 minute and try again." });
     }
 });
 
