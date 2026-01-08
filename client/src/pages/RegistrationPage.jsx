@@ -123,15 +123,44 @@ const RegistrationPage = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-blue-500/30 overflow-x-hidden font-sans">
       <ToastContainer theme="dark" />
-
-      {/* UPDATED CSS: Bigger, Brighter Orb */}
+      
+      {/* CSS FOR ANIMATIONS */}
       <style>{`
-        @keyframes moveX { 0% { left: 0; } 50% { left: 100%; } 100% { left: 0; } }
+      @keyframes moveX { 0% { left: 0; } 50% { left: 100%; } 100% { left: 0; } }
         @keyframes moveY { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
         .bouncing-orb-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
         .bouncing-orb-x { position: absolute; width: 100%; height: 100%; animation: moveX 20s linear infinite; }
         /* Brighter, larger, mix-blend-mode for glow */
         .bouncing-orb-y { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(59,130,246,0.3) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; animation: moveY 15s linear infinite; transform: translate(-50%, -50%); filter: blur(60px); mix-blend-mode: screen; }
+     
+        @keyframes scan-move {
+          0% { mask-position: -20% -20%; -webkit-mask-position: -20% -20%; }
+          100% { mask-position: 120% 120%; -webkit-mask-position: 120% 120%; }
+        }
+        @keyframes flow-glow {
+          to { background-position: 200% center; }
+        }
+        .glowing-text-flow {
+          /* The gradient: Dark Slate -> Bright Blue streak -> Dark Slate */
+          background-image: linear-gradient(
+            to right,
+            #475569 0%,   /* Slate 600 base */
+            #475569 35%,
+            #3b82f6 50%,  /* Bright Blue 500 Center */
+            #475569 65%,
+            #475569 100%
+          );
+          background-size: 200% auto;
+          
+          /* Clip background to text */
+          background-clip: text;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          
+          /* Animate */
+          animation: flow-glow 5s linear infinite;
+        }
       `}</style>
 
       {/* NAVBAR */}
@@ -172,7 +201,7 @@ const RegistrationPage = () => {
         {/* Hero Content */}
         <div className="max-w-7xl mx-auto relative z-10">
           <h1 className="text-7xl md:text-[10rem] font-semibold tracking-tighter leading-none mb-8 mix-blend-screen">
-            <span className="block text-slate-600">Decentralize</span>
+            <span className="block glowing-text-flow">Decentralize</span>
             <span className="block bg-gradient-to-r from-white via-slate-200 to-slate-500 bg-clip-text text-transparent">
               Your Health.
             </span>
@@ -180,8 +209,8 @@ const RegistrationPage = () => {
 
           <div className="flex flex-col md:flex-row justify-between items-end gap-12 mt-16">
             <p className="text-xl md:text-2xl text-slate-400 max-w-xl leading-relaxed">
-              The first patient-sovereign medical ledger. <br />
-              Your history, your keys, your control.
+              The first patient sovereign medical ledger. <br />
+              Your data, Your keys, Your control.
             </p>
 
             {/* UPDATED: Sleek Glowing Glass Button */}
@@ -261,7 +290,7 @@ const RegistrationPage = () => {
           {/* Encryption */}
           <div className="md:col-span-2 bg-[#0A0A0A] border border-white/10 p-8 rounded-3xl hover:border-blue-500/30 transition group">
             <Shield className="text-blue-500 mb-6 group-hover:scale-110 transition duration-500" size={40} />
-            <h4 className="text-2xl font-bold mb-2">Zero-Knowledge Privacy</h4>
+            <h4 className="text-2xl font-bold mb-2">Zero Trust Privacy</h4>
             <p className="text-slate-400 text-lg">Your data is encrypted before it ever touches the network. Only you hold the keys. Hospitals must request permission, which you grant via smart contract signatures.</p>
           </div>
           {/* AI */}
@@ -281,7 +310,7 @@ const RegistrationPage = () => {
           <div className="md:col-span-2 bg-[#0A0A0A] border border-white/10 p-8 rounded-3xl hover:border-blue-500/30 transition group">
             <Globe className="text-blue-500 mb-6 group-hover:rotate-12 transition duration-500" size={40} />
             <h4 className="text-2xl font-bold mb-2">Universal Standard</h4>
-            <p className="text-slate-400 text-lg">Whether you are in New York or Tokyo, your medical history travels with you on the blockchain. No more faxing records.</p>
+            <p className="text-slate-400 text-lg">Whether you are in Delhi or New York, your medical history travels with you on the blockchain. No more faxing records.</p>
           </div>
         </div>
       </section>
@@ -295,7 +324,7 @@ const RegistrationPage = () => {
          <MediVaultLogo />
          <p className="text-slate-500 mt-6 max-w-sm leading-relaxed">
             The standard for decentralized medical records. <br/>
-            Empowering patients with sovereignty, privacy, and intelligence.
+            Empowering patients & doctors with sovereignty, privacy, and intelligence.
          </p>
       </div>
       
