@@ -21,12 +21,27 @@ const RegistrationPage = () => {
   const [loading, setLoading] = useState(false);
   const [checkingUser, setCheckingUser] = useState(false);
 
-  // --- 1. AUTO-LOGIN LOGIC ---
+// --- 1. AUTO-LOGIN & PERSISTENCE LOGIC ---
+  
+  // A. Check if wallet is ALREADY connected on page load
   useEffect(() => {
-    if (account && contract) {
-      checkIfUserExists();
-    }
-  }, [account, contract]);
+    const checkConnection = async () => {
+      if (window.ethereum) {
+        try {
+          // Ask MetaMask if we are already trusted
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            // If yes, silently connect so the button updates to "Enter Dashboard"
+            connectWallet(); 
+          }
+        } catch (err) {
+          console.error("Auto-connect failed", err);
+        }
+      }
+    };
+    checkConnection();
+  }, []);
+
 
   const checkIfUserExists = async () => {
     setCheckingUser(true);
@@ -48,6 +63,16 @@ const RegistrationPage = () => {
     } catch (error) {
       console.error("Login Check Failed:", error);
       setCheckingUser(false);
+    }
+  };
+
+  // New handler for the Hero Button
+  const handleHeroBtnClick = () => {
+    if (!account) {
+      connectWallet();
+    } else {
+      // If already connected, NOW we check registration to direct them
+      checkIfUserExists();
     }
   };
 
@@ -109,25 +134,23 @@ const RegistrationPage = () => {
         .bouncing-orb-y { position: absolute; width: 500px; height: 500px; background: radial-gradient(circle, rgba(59,130,246,0.3) 0%, rgba(0,0,0,0) 70%); border-radius: 50%; animation: moveY 15s linear infinite; transform: translate(-50%, -50%); filter: blur(60px); mix-blend-mode: screen; }
       `}</style>
 
-      {/* UPDATED NAVBAR: Clean & Minimal */}
-      <nav className="fixed top-0 w-full px-8 py-6 flex justify-between items-center z-50 bg-[#050505]/60 backdrop-blur-xl border-b border-white/5">
+      {/* NAVBAR */}
+      <nav className="fixed top-0 w-full px-8 py-6 flex justify-between items-center z-40 bg-[#050505]/80 backdrop-blur-md border-b border-white/5">
         <MediVaultLogo />
 
+        {/* UPDATED: Tech Badges with new styling */}
         <div className="hidden md:flex gap-4">
           <TechBadge icon={Shield} text="AES-256" />
           <TechBadge icon={Database} text="IPFS Network" />
-          <TechBadge icon={Cpu} text="Gemini AI" />
+          <TechBadge icon={Cpu} text="AI Analysis" />
         </div>
 
-        {/* Only show if wallet is NOT connected, otherwise show succinct status */}
         <button
           onClick={connectWallet}
-          className={`px-6 py-2 rounded-full text-xs font-bold tracking-widest uppercase transition-all duration-300 border ${account
-              ? 'bg-blue-900/20 border-blue-500/30 text-blue-400'
-              : 'bg-white text-black hover:bg-slate-200 border-transparent shadow-[0_0_20px_rgba(255,255,255,0.3)]'
-            }`}
+          className="group flex items-center gap-2 bg-white text-black px-5 py-2 rounded-full text-sm font-bold hover:bg-slate-200 transition"
         >
-          {account ? (checkingUser ? "Verifying..." : "● Connected") : "Connect Wallet"}
+          {account ? (checkingUser ? "Verifying..." : "Connected") : "Connect"}
+          {!account && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
         </button>
       </nav>
 
@@ -163,7 +186,7 @@ const RegistrationPage = () => {
 
             {/* UPDATED: Sleek Glowing Glass Button */}
             <button
-              onClick={connectWallet}
+              onClick={handleHeroBtnClick}
               className="group relative px-8 py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:border-blue-500/50 hover:shadow-[0_0_40px_rgba(59,130,246,0.2)]"
             >
               {/* Inner Hover Glow */}
@@ -263,49 +286,63 @@ const RegistrationPage = () => {
         </div>
       </section>
 
-      {/* UPDATED FOOTER CONTENT */}
-      <footer className="bg-[#020202] border-t border-white/5 py-20 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
-
-          {/* Left Side: Brand */}
-          <div>
-            <MediVaultLogo />
-            <p className="text-slate-500 mt-6 max-w-sm leading-relaxed">
-              The standard for decentralized medical records. <br />
-              Empowering patients with sovereignty, privacy, and intelligence.
-            </p>
-          </div>
-
-          {/* Right Side: Tech Stack (Instead of fake links) */}
-          <div className="flex flex-col justify-center">
-            <h4 className="text-xs font-mono text-blue-500 uppercase tracking-widest mb-6">Engineered With</h4>
-            <div className="grid grid-cols-2 gap-y-4 gap-x-8">
-              <div className="flex items-center gap-3 text-slate-400 text-sm">
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div> Ethereum (Sepolia)
-              </div>
-              <div className="flex items-center gap-3 text-slate-400 text-sm">
-                <div className="w-1.5 h-1.5 bg-purple-500 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div> IPFS / Pinata
-              </div>
-              <div className="flex items-center gap-3 text-slate-400 text-sm">
-                <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.8)]"></div> Google Gemini AI
-              </div>
-              <div className="flex items-center gap-3 text-slate-400 text-sm">
-                <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-[0_0_10px_rgba(234,179,8,0.8)]"></div> React + Vite
-              </div>
+{/* UPDATED FOOTER CONTENT */}
+<footer className="bg-[#020202] border-t border-white/5 py-20 px-6">
+   <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
+      
+      {/* Left Side: Brand */}
+      <div>
+         <MediVaultLogo />
+         <p className="text-slate-500 mt-6 max-w-sm leading-relaxed">
+            The standard for decentralized medical records. <br/>
+            Empowering patients with sovereignty, privacy, and intelligence.
+         </p>
+      </div>
+      
+{/* Right Side: Deep Tech Stack */}
+      <div className="flex flex-col justify-center">
+         <h4 className="text-[15px] font-mono text-blue-500 uppercase tracking-widest mb-6">Engineered With</h4>
+         
+         <div className="grid grid-cols-2 gap-y-4 gap-x-12">
+            
+            {/* 1. Development Environment (Instead of just 'Ethereum') */}
+            <div className="flex items-center gap-3 text-slate-400 text-sm font-medium">
+               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
+               <span className="hover:text-white transition cursor-default">Hardhat / Solidity</span>
             </div>
-          </div>
 
-        </div>
+            {/* 2. Storage Layer */}
+            <div className="flex items-center gap-3 text-slate-400 text-sm font-medium">
+               <div className="w-1.5 h-1.5 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
+               <span className="hover:text-white transition cursor-default">IPFS / Pinata Cloud</span>
+            </div>
 
-        {/* Bottom Bar */}
-        <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-xs text-slate-600">
-          <p>© 2026 MediVault Protocol. Open Source Architecture.</p>
-          <div className="flex items-center gap-2 mt-4 md:mt-0">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <span className="font-mono">SYSTEMS OPERATIONAL</span>
-          </div>
-        </div>
-      </footer>
+            {/* 3. AI Engine (Specific Model Name = Pro) */}
+            <div className="flex items-center gap-3 text-slate-400 text-sm font-medium">
+               <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
+               <span className="hover:text-white transition cursor-default">Ethereum (Sepolia)</span>
+            </div>
+
+            {/* 4. Security Layer (Instead of 'React') */}
+            <div className="flex items-center gap-3 text-slate-400 text-sm font-medium">
+               <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-[0_0_8px_rgba(234,179,8,0.8)]"></div>
+               <span className="hover:text-white transition cursor-default">Ethers.js / AES-256</span>
+            </div>
+
+         </div>
+      </div>
+
+   </div>
+   
+   {/* Bottom Bar */}
+   <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-xs text-slate-600">
+      <p>© 2026 MediVault Protocol.</p>
+      <div className="flex items-center gap-2 mt-4 md:mt-0">
+         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+         <span className="font-mono">Online</span>
+      </div>
+   </div>
+</footer>
 
       {/* --- REGISTRATION MODAL --- */}
       {showRegModal && (
