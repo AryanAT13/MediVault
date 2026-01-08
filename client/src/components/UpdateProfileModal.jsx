@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { WalletContext } from '../context/WalletContext';
-import { X, Save, Activity } from 'lucide-react';
+import { X, Save, Activity, ChevronDown } from 'lucide-react';
 
 const UpdateProfileModal = ({ onClose, onUpdateSuccess }) => {
   const { contract } = useContext(WalletContext);
@@ -13,16 +13,15 @@ const UpdateProfileModal = ({ onClose, onUpdateSuccess }) => {
     if (!contract) return;
     setLoading(true);
     try {
-      // Sending data to Blockchain
       const tx = await contract.updateMedicalInfo(
         formData.blood,
         formData.allergies,
         formData.deficiency,
         formData.chronic
       );
-      await tx.wait(); // Wait for mining
-      onUpdateSuccess(); // Refresh the dashboard data
-      onClose(); // Close the popup
+      await tx.wait(); 
+      onUpdateSuccess(); 
+      onClose(); 
     } catch (error) {
       console.error(error);
       alert("Update Failed");
@@ -42,19 +41,39 @@ const UpdateProfileModal = ({ onClose, onUpdateSuccess }) => {
         </h2>
         
         <div className="space-y-4">
+          
+          {/* --- DROPDOWN MENU --- */}
           <div>
             <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Blood Type</label>
-            <input 
-                placeholder="e.g. O+" 
-                className="w-full bg-slate-800 p-4 rounded-xl text-white border border-slate-600 focus:border-blue-500 focus:outline-none" 
+            <div className="relative">
+              <select 
+                value={formData.blood}
                 onChange={(e) => setFormData({...formData, blood: e.target.value})} 
-            />
+                className="w-full bg-slate-800 p-4 rounded-xl text-white border-2 border-slate-600 focus:border-blue-500 outline-none appearance-none cursor-pointer"
+              >
+                <option value="" disabled>Select Blood Type</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+              
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <ChevronDown size={20} />
+              </div>
+            </div>
           </div>
+          {/* --------------------- */}
+
           <div>
             <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Allergies</label>
             <input 
                 placeholder="e.g. Peanuts, Penicillin" 
-                className="w-full bg-slate-800 p-4 rounded-xl text-white border border-slate-600 focus:border-blue-500 focus:outline-none" 
+                className="w-full bg-slate-800 p-4 rounded-xl text-white border border-slate-600 focus:border-blue-500 outline-none" 
                 onChange={(e) => setFormData({...formData, allergies: e.target.value})} 
             />
           </div>
@@ -62,7 +81,7 @@ const UpdateProfileModal = ({ onClose, onUpdateSuccess }) => {
              <label className="text-xs uppercase text-slate-500 font-bold mb-1 block">Chronic Conditions</label>
             <input 
                 placeholder="e.g. Asthma, Diabetes" 
-                className="w-full bg-slate-800 p-4 rounded-xl text-white border border-slate-600 focus:border-blue-500 focus:outline-none" 
+                className="w-full bg-slate-800 p-4 rounded-xl text-white border border-slate-600 focus:border-blue-500 outline-none" 
                 onChange={(e) => setFormData({...formData, chronic: e.target.value})} 
             />
           </div>
@@ -70,9 +89,9 @@ const UpdateProfileModal = ({ onClose, onUpdateSuccess }) => {
           <button 
             onClick={handleUpdate} 
             disabled={loading} 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl mt-4 flex items-center justify-center gap-2 transition"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl mt-4 flex items-center justify-center gap-2 transition hover:scale-[1.02]"
           >
-            {loading ? "Updating Blockchain..." : <><Save size={20} /> Save Records</>}
+            {loading ? "Updating..." : <><Save size={20} /> Save Records</>}
           </button>
         </div>
       </div>
