@@ -373,39 +373,113 @@ const RegistrationPage = () => {
    </div>
 </footer>
 
-      {/* --- REGISTRATION MODAL --- */}
+{/* --- REFINED REGISTRATION MODAL --- */}
       {showRegModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-          <div className="bg-[#0f0f0f] border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl p-8 relative">
-            <button onClick={() => setShowRegModal(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X /></button>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-in fade-in duration-500">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#050505] p-8 shadow-2xl transition-all">
+            
+            {/* 1. Decorative Top Highlight Line (The "Classy" Touch) */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50" />
+
+            <button onClick={() => setShowRegModal(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white transition"><X size={20} /></button>
+            
+            {/* Header */}
             <div className="mb-8 text-center">
-              <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-500"><CheckCircle size={32} /></div>
-              <h2 className="text-3xl font-bold tracking-tight">Claim Identity</h2>
-              <p className="text-slate-400 mt-2">Initialize your vault on the blockchain.</p>
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/10 ring-1 ring-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                <CheckCircle className="text-blue-500" size={32} />
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight text-white">Claim Identity</h2>
+              <p className="mt-2 text-sm text-slate-400">Initialize your vault on the blockchain.</p>
             </div>
-            <div className="flex bg-white/5 p-1 rounded-xl mb-6">
-              <button onClick={() => setUserType('patient')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition ${userType === 'patient' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Patient</button>
-              <button onClick={() => setUserType('hospital')} className={`flex-1 py-3 rounded-lg text-sm font-bold transition ${userType === 'hospital' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Doctor / Hospital</button>
+
+            {/* Toggle Switch */}
+            <div className="mb-8 flex rounded-xl bg-white/5 p-1 ring-1 ring-white/5">
+              {['patient', 'hospital'].map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setUserType(type)}
+                  className={`flex-1 rounded-lg py-3 text-sm font-bold capitalize transition-all duration-300 ${
+                    userType === type
+                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.3)]'
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
             </div>
-            <form onSubmit={handleRegister} className="space-y-4">
+
+            {/* Form */}
+            <form onSubmit={handleRegister} className="space-y-5">
               {userType === 'patient' ? (
                 <>
-                  <input required type="text" placeholder="Legal Name" className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 focus:border-blue-500 focus:outline-none transition" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input required type="number" placeholder="Age" className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 focus:border-blue-500 focus:outline-none" value={formData.age} onChange={(e) => setFormData({ ...formData, age: e.target.value })} />
-                    <select className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 focus:border-blue-500 focus:outline-none" value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })}>
-                      <option>Male</option> <option>Female</option> <option>Other</option>
-                    </select>
+                  {/* Name Input with Floating Label */}
+                  <div className="group relative">
+                    <input 
+                      required 
+                      type="text" 
+                      className="peer w-full rounded-xl border border-white/10 bg-white/5 px-4 pt-5 pb-3 text-white outline-none transition-all focus:border-blue-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+                      value={formData.name} 
+                      onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                    />
+                    <span className={`absolute left-4 top-4 text-slate-500 transition-all duration-200 pointer-events-none ${formData.name ? '-translate-y-3 text-[10px] text-blue-400' : 'peer-focus:-translate-y-3 peer-focus:text-[10px] peer-focus:text-blue-400'}`}>
+                      Legal Name
+                    </span>
                   </div>
-                  <input required type="number" placeholder="Mobile Number" className="w-full bg-black border border-white/10 rounded-xl px-4 py-4 focus:border-blue-500 focus:outline-none" value={formData.contact} onChange={(e) => setFormData({ ...formData, contact: e.target.value })} />
+
+                  <div className="grid grid-cols-2 gap-4">
+                     {/* Age Input */}
+                     <div className="group relative">
+                        <input required type="number" className="peer w-full rounded-xl border border-white/10 bg-white/5 px-4 pt-5 pb-3 text-white outline-none transition-all focus:border-blue-500 focus:bg-white/10"
+                          value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} />
+                         <span className={`absolute left-4 top-4 text-slate-500 transition-all duration-200 pointer-events-none ${formData.age ? '-translate-y-3 text-[10px] text-blue-400' : 'peer-focus:-translate-y-3 peer-focus:text-[10px] peer-focus:text-blue-400'}`}>
+                          Age
+                        </span>
+                     </div>
+                     
+                     {/* Gender Select */}
+                     <div className="relative">
+                        <select className="w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-white outline-none transition-all focus:border-blue-500 focus:bg-white/10 cursor-pointer"
+                          value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})}>
+                            <option className="bg-black">Male</option> 
+                            <option className="bg-black">Female</option> 
+                            <option className="bg-black">Other</option>
+                        </select>
+                        {/* Custom Arrow for Classy Look */}
+                        <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                          <ArrowRight size={14} className="rotate-90" />
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Mobile Input */}
+                  <div className="group relative">
+                     <input required type="number" className="peer w-full rounded-xl border border-white/10 bg-white/5 px-4 pt-5 pb-3 text-white outline-none transition-all focus:border-blue-500 focus:bg-white/10"
+                       value={formData.contact} onChange={(e) => setFormData({...formData, contact: e.target.value})} />
+                      <span className={`absolute left-4 top-4 text-slate-500 transition-all duration-200 pointer-events-none ${formData.contact ? '-translate-y-3 text-[10px] text-blue-400' : 'peer-focus:-translate-y-3 peer-focus:text-[10px] peer-focus:text-blue-400'}`}>
+                       Mobile Number
+                     </span>
+                  </div>
                 </>
               ) : (
-                <div className="p-6 bg-blue-900/10 border border-blue-500/20 rounded-xl text-center">
-                  <p className="text-blue-200 text-sm">Hospital accounts are verified via Wallet Address: <br /> <span className="font-mono text-xs opacity-70">{account}</span></p>
-                </div>
+                 <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-6 text-center">
+                    <p className="font-mono text-sm text-blue-200">
+                       <span className="mb-2 block text-[10px] uppercase tracking-widest text-blue-400 opacity-70">Hospital accounts are verified via Wallet Address:</span>
+                       {account}
+                    </p>
+                 </div>
               )}
-              <button disabled={loading} className="w-full bg-white text-black hover:bg-slate-200 font-bold py-4 rounded-xl mt-4 transition flex items-center justify-center gap-2 text-lg">
-                {loading ? <Loader className="animate-spin" /> : "Mint Identity"}
+              
+              <button 
+                disabled={loading} 
+                className="group relative mt-2 flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-white py-4 text-lg font-bold text-black transition-all hover:bg-slate-200 disabled:opacity-50"
+              >
+                  {loading ? <Loader className="animate-spin" /> : (
+                    <>
+                      <span>Mint Identity</span>
+                      <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
               </button>
             </form>
           </div>
