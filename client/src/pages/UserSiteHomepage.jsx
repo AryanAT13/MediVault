@@ -34,6 +34,13 @@ const UserSiteHomepage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadMeta, setUploadMeta] = useState({ fileName: '', description: '' });
   const [isUploading, setIsUploading] = useState(false);
+  
+    const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
 
   // --- 0. SESSION RESTORE LOGIC (Fixes Refresh Issue) ---
   useEffect(() => {
@@ -281,11 +288,11 @@ const UserSiteHomepage = () => {
       {/* --- MAIN CONTENT --- */}
       <main className="relative z-10 pt-32 px-6 max-w-7xl mx-auto space-y-8">
         
-        {/* 1. HEADER & ACTIONS */}
+{/* 1. HEADER & ACTIONS */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-6">
             <div>
                 <h1 className="text-4xl md:text-5xl font-light text-white mb-2">
-                    Good Evening, <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">{generalData.name}</span>
+                    {getGreeting()}, <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">{generalData.name}</span>
                 </h1>
                 <p className="text-slate-500 text-sm flex items-center gap-2">
                     <Shield size={14} className="text-green-500" /> 
