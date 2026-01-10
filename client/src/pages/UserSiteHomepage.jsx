@@ -273,7 +273,7 @@ const UserSiteHomepage = () => {
          <div className="flex items-center gap-4">
             <MediVaultLogo />
             <div className="hidden md:block w-px h-6 bg-white/10"></div>
-            <span className="hidden md:block text-xs font-mono text-slate-500 tracking-widest uppercase">Patient Portal</span>
+            <span className="hidden md:block text-xs font-semibold text-slate-500 tracking-widest uppercase">Patient Portal</span>
          </div>
          
          <div className="flex items-center gap-6">
