@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const FormData = require('form-data');
+const https = require('https');
 
 const app = express();
 app.use(express.json());
@@ -135,7 +136,8 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
                 'Content-Type': `multipart/form-data; boundary=${formData.getBoundary()}`,
                 'pinata_api_key': process.env.PINATA_API_KEY,
                 'pinata_secret_api_key': process.env.PINATA_SECRET_API_KEY
-            }
+            },
+            httpsAgent: new https.Agent({ rejectUnauthorized: false })
         });
 
         // 4. Success! Get the Hash (CID)
@@ -200,8 +202,6 @@ app.post('/api/analyze-report', async (req, res) => {
         // --- STEP 2: PREPARE AI ---
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         
-        // Use the model version that worked for you. 
-        // If 2.5 keeps failing, swap this string to "gemini-1.5-flash"
         const MODEL_NAME = "gemini-2.5-flash"; 
         const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
