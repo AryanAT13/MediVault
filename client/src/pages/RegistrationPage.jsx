@@ -17,7 +17,7 @@ const RegistrationPage = () => {
   // Registration State
   const [showRegModal, setShowRegModal] = useState(false);
   const [userType, setUserType] = useState('patient');
-  const [formData, setFormData] = useState({ name: '', age: '', gender: 'Male', contact: '' });
+  const [formData, setFormData] = useState({ name: '', age: '', gender: 'Male', contact: '', hospitalName: '' });
   const [loading, setLoading] = useState(false);
   const [checkingUser, setCheckingUser] = useState(false);
 
@@ -88,7 +88,12 @@ const RegistrationPage = () => {
         tx = await contract.registerHospital();
       }
       await tx.wait();
-      await axios.post('/api/register', { walletAddress: account, userType: userType });
+      await axios.post('/api/register', { 
+    walletAddress: account, 
+    userType: userType,
+    // If patient, use name. If hospital, use hospitalName.
+    name: userType === 'patient' ? formData.name : formData.hospitalName 
+});
       toast.success("Identity Created Successfully!");
       navigate(userType === 'patient' ? '/userpage' : '/hospitalpage');
     } catch (error) {
@@ -461,14 +466,31 @@ const RegistrationPage = () => {
                      </span>
                   </div>
                 </>
-              ) : (
-                 <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-6 text-center">
-                    <p className="font-mono text-sm text-blue-200">
-                       <span className="mb-2 block text-[10px] uppercase tracking-widest text-blue-400 opacity-70">Hospital accounts are verified via Wallet Address:</span>
-                       {account}
-                    </p>
-                 </div>
-              )}
+) : (
+    <div className="space-y-4">
+        {/* Wallet Address Display */}
+        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-center">
+            <p className="font-mono text-xs text-blue-200">
+                <span className="block text-[10px] uppercase tracking-widest text-blue-400 opacity-70 mb-1">Verifying Wallet Address</span>
+                {account}
+            </p>
+        </div>
+
+        {/* New Hospital Name Input */}
+        <div className="group relative">
+            <input 
+                required 
+                type="text" 
+                className="peer w-full rounded-xl border border-white/10 bg-white/5 px-4 pt-5 pb-3 text-white outline-none transition-all focus:border-blue-500 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+                value={formData.hospitalName} 
+                onChange={(e) => setFormData({...formData, hospitalName: e.target.value})} 
+            />
+            <span className={`absolute left-4 top-4 text-slate-500 transition-all duration-200 pointer-events-none ${formData.hospitalName ? '-translate-y-3 text-[10px] text-blue-400' : 'peer-focus:-translate-y-3 peer-focus:text-[10px] peer-focus:text-blue-400'}`}>
+                Hospital / Clinic Name
+            </span>
+        </div>
+    </div>
+)}
               
               <button 
                 disabled={loading} 

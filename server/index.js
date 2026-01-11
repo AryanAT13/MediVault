@@ -21,6 +21,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/medivault')
 const userSchema = new mongoose.Schema({
     walletAddress: String,
     userType: String, // 'patient' or 'hospital'
+    name: String,
     pendingRequests: [{
         hospitalAddress: String,
         hospitalName: String,
@@ -45,39 +46,64 @@ const upload = multer({ storage: storage });
 
 // --- ROUTES ---
 
-// 1. Register User
+// --- 1. REGISTER ROUTE (Fixed: Updates existing users) ---
 app.post('/api/register', async (req, res) => {
     try {
-        const { walletAddress, userType } = req.body;
+        const { walletAddress, userType, name } = req.body;
+        
+        // Check if user exists
         let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
-
-        if (user) return res.json({ msg: 'User synced', user });
-
-        user = new User({ walletAddress: walletAddress.toLowerCase(), userType });
+        
+        if (!user) {
+            // Create new user
+            user = new User({ 
+                walletAddress: walletAddress.toLowerCase(), 
+                userType, 
+                name: name || "Unnamed User" 
+            });
+        } else {
+            // CRITICAL FIX: If user exists, UPDATE the name!
+            user.name = name || user.name; 
+            user.userType = userType;
+        }
+        
         await user.save();
-        res.json({ msg: 'Registration successful', user });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.json({ success: true, user });
+    } catch (error) {
+        console.error("Registration Error:", error);
+        res.status(500).json({ error: "Server Error" });
     }
 });
 
-// 2. Request Access
+// 2. REQUEST ACCESS ROUTE (Bulletproof: Fetches Name from DB)
 app.post('/api/request-access', async (req, res) => {
     try {
-        const { patientAddress, hospitalAddress, hospitalName } = req.body;
-        const user = await User.findOne({ walletAddress: patientAddress.toLowerCase() });
+        const { patientAddress, hospitalAddress } = req.body; // We ignore hospitalName from frontend
 
-        if (!user) return res.status(404).json({ error: "Patient not found" });
+        // A. Find the Hospital in DB to get the REAL Name
+        const hospitalUser = await User.findOne({ walletAddress: hospitalAddress.toLowerCase() });
+        const realHospitalName = hospitalUser ? hospitalUser.name : "Unregistered Clinic";
 
-        // Check if request already exists
-        const exists = user.pendingRequests.some(req => req.hospitalAddress === hospitalAddress);
-        if (!exists) {
-            user.pendingRequests.push({ hospitalAddress, hospitalName });
-            await user.save();
+        // B. Find the Patient
+        const patient = await User.findOne({ walletAddress: patientAddress.toLowerCase() });
+
+        if (!patient) {
+            return res.status(404).json({ error: "Patient not found in database" });
         }
+
+        // C. Push the request to their list with the REAL Name
+        patient.pendingRequests.push({
+            hospitalAddress,
+            hospitalName: realHospitalName, // <--- This uses the DB value
+            timestamp: new Date()
+        });
+
+        await patient.save();
         res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+
+    } catch (error) {
+        console.error("Request Error:", error);
+        res.status(500).json({ error: "Failed to send request" });
     }
 });
 
@@ -105,6 +131,26 @@ app.post('/api/resolve-request', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// --- NEW ROUTE: Get User Name (For Hospital Dashboard) ---
+app.post('/api/get-user-name', async (req, res) => {
+    try {
+        const { walletAddress } = req.body;
+        
+        // Find user by wallet address
+        const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+        
+        if (user) {
+            // Return the saved name (Hospital Name or Patient Name)
+            res.json({ name: user.name });
+        } else {
+            res.status(404).json({ error: "User not found" });
+        }
+    } catch (error) {
+        console.error("Error fetching user name:", error);
+        res.status(500).json({ error: "Server Error" });
     }
 });
 
