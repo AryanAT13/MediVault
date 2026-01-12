@@ -467,7 +467,7 @@ const HospitalHomepage = () => {
                    <div className="relative">
                         <select className="w-full appearance-none bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none"
                             value={uploadMeta.category} onChange={(e) => setUploadMeta({...uploadMeta, category: e.target.value})}>
-                            <option>Lab Report</option><option>Prescription</option><option>X-Ray / Scan</option><option>Diagnosis</option><option>Vaccination</option>
+                            <option>Lab Report</option><option>Prescription</option><option>X-Ray</option><option>Other</option>
                         </select>
                         <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"><Search size={14} className="rotate-90"/></div>
                    </div>
