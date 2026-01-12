@@ -18,7 +18,6 @@ const PdfUpload = ({ patientAddress, onUploadSuccess }) => {
     setUploading(true);
 
     try {
-      // 1. Upload to Server (IPFS Simulator)
       const formData = new FormData();
       formData.append('file', file);
 
@@ -29,10 +28,7 @@ const PdfUpload = ({ patientAddress, onUploadSuccess }) => {
       if (!res.data.success) throw new Error("Upload failed");
 
       const { ipfsHash, timestamp } = res.data;
-      console.log("✅ File Stored. Hash:", ipfsHash);
-
-      // 2. Save Hash to Blockchain
-      // Your Solidity function is named 'addReport', NOT 'insertReport'
+      console.log("File Stored. Hash:", ipfsHash);
       const tx = await contract.addReport(
         patientAddress,
         ipfsHash,
@@ -41,9 +37,8 @@ const PdfUpload = ({ patientAddress, onUploadSuccess }) => {
       );
       
       console.log("⏳ Waiting for blockchain confirmation...");
-      await tx.wait(); // Wait for mining
+      await tx.wait(); 
 
-      // 3. Cleanup
       setUploading(false);
       setFile(null);
       if (onUploadSuccess) onUploadSuccess();
@@ -63,7 +58,6 @@ const PdfUpload = ({ patientAddress, onUploadSuccess }) => {
       </h3>
       
       <div className="space-y-4">
-        {/* Category Select */}
         <select 
           value={category} 
           onChange={(e) => setCategory(e.target.value)}
@@ -75,7 +69,6 @@ const PdfUpload = ({ patientAddress, onUploadSuccess }) => {
           <option value="Other">📄 Other</option>
         </select>
 
-        {/* File Input */}
         <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center hover:border-blue-500 transition cursor-pointer relative">
           <input 
             type="file" 
@@ -94,7 +87,6 @@ const PdfUpload = ({ patientAddress, onUploadSuccess }) => {
           )}
         </div>
 
-        {/* Upload Button */}
         <button 
           onClick={handleUpload} 
           disabled={!file || uploading}
