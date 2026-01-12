@@ -82,7 +82,7 @@ app.post('/api/request-access', async (req, res) => {
 
         // A. Find the Hospital in DB to get the REAL Name
         const hospitalUser = await User.findOne({ walletAddress: hospitalAddress.toLowerCase() });
-        const realHospitalName = hospitalUser ? hospitalUser.name : "Unregistered Clinic";
+        const realHospitalName = hospitalUser ? hospitalUser.name : "Unregistered Hospital";
 
         // B. Find the Patient
         const patient = await User.findOne({ walletAddress: patientAddress.toLowerCase() });

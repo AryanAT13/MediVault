@@ -24,7 +24,7 @@ const HospitalHomepage = () => {
   const [allRecords, setAllRecords] = useState([]);
   
   // Hospital Profile State (To fix the "Missing Name" issue)
-  const [hospitalName, setHospitalName] = useState("Unknown Clinic");
+  const [hospitalName, setHospitalName] = useState("Unknown Hospital");
 
   // Upload State
   const [showUploadModal, setShowUploadModal] = useState(false);
