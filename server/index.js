@@ -14,7 +14,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect('mongodb://127.0.0.1:27017/medivault')
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/medivault';
+
+mongoose.connect(MONGO_URI)
     .then(() => console.log("✅ MongoDB Connected"))
     .catch(err => console.error("❌ MongoDB Error:", err));
 
