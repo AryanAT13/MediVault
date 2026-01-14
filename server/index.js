@@ -179,7 +179,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ IPFS Upload Error:", error);
+        console.error("IPFS Upload Error:", error);
         res.status(500).json({ error: "Failed to upload to IPFS" });
     }
 });
@@ -244,7 +244,7 @@ app.post('/api/analyze-report', async (req, res) => {
         while (attempts < maxAttempts && !text) {
             try {
                 attempts++;
-                console.log(`🧠 AI Attempt ${attempts}/${maxAttempts}...`);
+                console.log(`AI Attempt ${attempts}/${maxAttempts}...`);
                 
                 const result = await model.generateContent([
                     prompt,
@@ -253,7 +253,7 @@ app.post('/api/analyze-report', async (req, res) => {
                 text = result.response.text();
             
             } catch (aiError) {
-                console.error(`⚠️ Attempt ${attempts} failed: ${aiError.message}`);
+                console.error(`Attempt ${attempts} failed: ${aiError.message}`);
                 
                 if (aiError.message.includes("503") || aiError.message.includes("overloaded")) {
                     console.log("Google is busy. Waiting 2 seconds...");
@@ -270,7 +270,7 @@ app.post('/api/analyze-report', async (req, res) => {
         res.json({ analysis: text });
 
     } catch (error) {
-        console.error("❌ Final Error:", error.message);
+        console.error("Final Error:", error.message);
         res.status(500).json({ error: "System is overloaded. Please wait 1 minute and try again." });
     }
 });
