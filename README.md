@@ -18,11 +18,7 @@ The system utilizes **IPFS** for decentralized storage to ensure data immutabili
 ---
 
 ## System Design
-
-
-
-
----
+<img src="https://github.com/AryanAT13/MediVault/raw/main/design.png" alt="System Design">
 
 ## Core Objectives & Blockchain Utility
 
