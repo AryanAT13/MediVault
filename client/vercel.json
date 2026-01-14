@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://medivault-be.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
