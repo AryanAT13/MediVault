@@ -1,25 +1,23 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19; // Upgraded to a newer, safer compiler version
+pragma solidity ^0.8.19;
 
 contract MediVault {
     
-    // STRUCTURES
     struct Report {
-        string cID;        // IPFS Hash
+        string cID;        
         string timeStamp;
-        string category;   // e.g., "X-Ray", "Blood Test"
+        string category;   
     }
 
     struct PatientData {
         string patientName;
         string gender;
-        uint256 age;       // Changed int to uint (age can't be negative)
+        uint256 age;      
         uint256 contactNumber;
         string bloodType;
         string allergies;
         string deficiencies;
         string chronicDiseases;
-        string encryptionKey; // UPGRADE: Added to store the user's decryption key securely later
+        string encryptionKey; 
         Report[] reports;
     }
 
@@ -30,20 +28,17 @@ contract MediVault {
         bool exists;
     }
 
-    // STATE MAPPINGS
-    mapping(address => PatientData) public patients; // Renamed 'map' to 'patients' for clarity
+    mapping(address => PatientData) public patients; 
     mapping(address => mapping(address => bool)) public permitted;
     mapping(address => bool) public registeredHospitals;
     mapping(address => bool) public registeredPatients;
     mapping(address => Request) public accessRequests;
 
-    // EVENTS (For the frontend to listen to)
     event AccessRequested(address indexed hospital, address indexed patient);
     event AccessGranted(address indexed hospital, address indexed patient);
     event AccessDenied(address indexed hospital, address indexed patient);
     event ReportAdded(address indexed patient, string category, string timestamp);
 
-    // MODIFIERS
     modifier onlyPatient(address patient) {
         require(msg.sender == patient, "Caller is not the patient");
         _;
@@ -57,13 +52,11 @@ contract MediVault {
         _;
     }
 
-    // REGISTRATION FUNCTIONS
     function registerHospital() external {
         require(!registeredHospitals[msg.sender], "Hospital already registered");
         registeredHospitals[msg.sender] = true;
     }
 
-// UPDATED: Now accepts Contact Number
     function registerPatient(string memory _name, uint256 _age, string memory _gender, uint256 _contactNumber) external {
         require(!registeredPatients[msg.sender], "Patient already registered");
         registeredPatients[msg.sender] = true;
@@ -73,7 +66,6 @@ contract MediVault {
         patients[msg.sender].contactNumber = _contactNumber; 
     }
 
-    // ACCESS CONTROL
     function grantAccess(address hospital) external onlyPatient(msg.sender) {
         require(registeredHospitals[hospital], "Address is not a registered hospital");
         permitted[msg.sender][hospital] = true;
@@ -82,10 +74,9 @@ contract MediVault {
 
     function revokeAccess(address hospital) external onlyPatient(msg.sender) {
         permitted[msg.sender][hospital] = false;
-        // emit AccessRevoked(hospital, msg.sender); // Good to add later
+        // emit AccessRevoked(hospital, msg.sender); 
     }
 
-    // REQUEST ACCESS FLOW
     function requestAccess(address patient) external {
         require(registeredHospitals[msg.sender], "Only hospitals can request access");
         require(registeredPatients[patient], "Patient does not exist");
@@ -114,7 +105,6 @@ contract MediVault {
         delete accessRequests[msg.sender]; // Clear request after handling
     }
 
-    // DATA MANAGEMENT
     function addReport(
         address patient, 
         string memory _cID, 
@@ -137,7 +127,6 @@ contract MediVault {
         patients[msg.sender].chronicDiseases = _chronicDiseases;
     }
 
-    // GETTERS
     function getPatientDetails(address patient) external view onlyAuthorized(patient) returns (
         string memory name, 
         uint256 age, 
