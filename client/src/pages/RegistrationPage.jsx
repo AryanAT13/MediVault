@@ -159,7 +159,7 @@ const RegistrationPage = () => {
         <MediVaultLogo />
 
         <div className="hidden md:flex gap-4">
-          <TechBadge icon={Shield} text="AES-256" />
+          <TechBadge icon={Shield} text="Smart Contracts" />
           <TechBadge icon={Database} text="IPFS Network" />
           <TechBadge icon={Cpu} text="AI Analysis" />
         </div>
@@ -239,7 +239,7 @@ const RegistrationPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12 relative z-10">
               {[
                 { step: "01", title: "Authenticate", icon: Lock, desc: "Wallet signature verifies identity." },
-                { step: "02", title: "Encrypt", icon: Shield, desc: "AES-256 client-side hashing." },
+                { step: "02", title: "Encrypt", icon: Shield, desc: "On Chain access control." },
                 { step: "03", title: "Distribute", icon: Database, desc: "IPFS pin & smart contract log." },
                 { step: "04", title: "Interpret", icon: Cpu, desc: "AI multimodal analysis." }
               ].map((item, i) => (
@@ -321,7 +321,7 @@ const RegistrationPage = () => {
 
               <div className="flex items-center gap-3 text-slate-400 text-sm font-medium">
                 <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full shadow-[0_0_8px_rgba(234,179,8,0.8)]"></div>
-                <span className="hover:text-white transition cursor-default">Ethers.js / AES-256</span>
+                <span className="hover:text-white transition cursor-default">Ethers.js</span>
               </div>
 
             </div>
