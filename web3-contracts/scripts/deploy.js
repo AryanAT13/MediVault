@@ -12,7 +12,6 @@ async function main() {
   console.log("MediVault deployed to:", medivault.target);
 }
 
-// Handle errors
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
