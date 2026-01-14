@@ -17,8 +17,8 @@ app.use(cors());
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/medivault';
 
 mongoose.connect(MONGO_URI)
-    .then(() => console.log("✅ MongoDB Connected"))
-    .catch(err => console.error("❌ MongoDB Error:", err));
+    .then(() => console.log("mongo conn..."))
+    .catch(err => console.error("mongo errr", err));
 
 const userSchema = new mongoose.Schema({
     walletAddress: String,
