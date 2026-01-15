@@ -1,5 +1,5 @@
 # MediVault
-### Decentralized Unified Health Ledger & Patient Data Sovereignty
+### Decentralized Unified Health Ledger 
 
 Demo Video:https://www.youtube.com/watch?v=uL0gXsj_SDk
 
