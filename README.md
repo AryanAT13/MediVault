@@ -1,7 +1,7 @@
 # MediVault
-### Decentralized Unified Health Ledger & Patient Data Sovereignty
+### Decentralized Unified Health Ledger 
 
-MediVault:https://medivault-two.vercel.app/
+Demo Video:https://www.youtube.com/watch?v=uL0gXsj_SDk
 
 Sepolia Faucet:https://www.alchemy.com/faucets/ethereum-sepolia
 
@@ -18,11 +18,7 @@ The system utilizes **IPFS** for decentralized storage to ensure data immutabili
 ---
 
 ## System Design
-
-
-
-
----
+<img src="https://github.com/AryanAT13/MediVault/raw/main/design.png" alt="System Design">
 
 ## Core Objectives & Blockchain Utility
 
@@ -41,7 +37,7 @@ We replace traditional administrative red tape with automated Smart Contracts. P
 
 ### Patient Portal
 * **Unified Health Timeline:** A chronological, immutable view of the patient's complete medical history across different providers.
-* **AI-Driven Health Literacy:** An integrated AI analysis tool (Gemini) that simplifies complex lab reports and diagnoses into understandable language, empowering patients to make informed health decisions.
+* **AI-Driven Health Literacy:** An integrated AI analysis tool that simplifies complex lab reports and diagnoses into understandable language, empowering patients to make informed health decisions.
 * **Permission Management:** A dashboard to view active access grants and revoke permissions for previous healthcare providers in real-time.
 
 ### Hospital & Doctor Portal
