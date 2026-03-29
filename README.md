@@ -1,11 +1,11 @@
 # MediVault
 ### Decentralized Unified Health Ledger 
 
-Demo Video:https://www.youtube.com/watch?v=uL0gXsj_SDk
+[Watch the Demo Video Here](https://www.youtube.com/watch?v=uL0gXsj_SDk)
 
-Sepolia Faucet:https://www.alchemy.com/faucets/ethereum-sepolia
-
-Google Web3 Faucet:https://cloud.google.com/application/web3/faucet/ethereum/sepolia
+**Resources for Testing:**
+* [Sepolia ETH Faucet (Alchemy)](https://www.alchemy.com/faucets/ethereum-sepolia)
+* [Sepolia ETH Faucet (Google Web3)](https://cloud.google.com/application/web3/faucet/ethereum/sepolia)
 
 ---
 
@@ -28,8 +28,8 @@ Unlike traditional centralized servers where data breaches are common, MediVault
 ### 2. Immutable Record Keeping
 Medical history is sensitive and must be tamper-proof. By logging record metadata on the Ethereum Sepolia blockchain, we create an immutable audit trail. Once a record hash is minted, it cannot be altered, ensuring the integrity of the patient's medical timeline.
 
-### 3. Granular Access Control
-We replace traditional administrative red tape with automated Smart Contracts. Patients can grant or revoke access to specific hospitals instantly. This permissioned architecture ensures that doctors get the data they need during emergencies without compromising the patient's long-term privacy.
+### 3. Granular Access Control & The "Kill Switch"
+We replace traditional administrative red tape with automated Smart Contracts. Patients have an absolute "Kill Switch", they can grant or instantly revoke access to specific hospitals. This permissioned architecture ensures that doctors get the data they need during emergencies, but the patient retains the power to lock their vault at any time.
 
 ---
 
@@ -38,7 +38,7 @@ We replace traditional administrative red tape with automated Smart Contracts. P
 ### Patient Portal
 * **Unified Health Timeline:** A chronological, immutable view of the patient's complete medical history across different providers.
 * **AI-Driven Health Literacy:** An integrated AI analysis tool that simplifies complex lab reports and diagnoses into understandable language, empowering patients to make informed health decisions.
-* **Permission Management:** A dashboard to view active access grants and revoke permissions for previous healthcare providers in real-time.
+* **Active Permissions (The Kill Switch):** A dedicated dashboard interface to monitor exactly which hospitals currently have access. The system automatically resolves complex blockchain addresses into readable hospital names, allowing patients to revoke access on-chain with a single click.
 
 ### Hospital & Doctor Portal
 * **Verified Practitioner Access:** A secure gateway for medical professionals to request patient data.
@@ -63,9 +63,10 @@ The application follows a secure Hybrid On-Chain/Off-Chain architecture:
 
 1.  **Encryption & Storage:** The medical file is uploaded to the IPFS network via Pinata, generating a unique Content Identifier (CID).
 2.  **Immutable Logging:** The CID, along with the timestamp and category, is minted onto the Blockchain via a Smart Contract transaction.
-3.  **Access Request:** A doctor initiates a request to view a specific record. This request is logged on the backend.
+3.  **Access Request:** A doctor initiates a request to view a specific record. This request is logged on the backend database.
 4.  **Verification:** The patient approves the request via their wallet. The Smart Contract updates the permission state on the blockchain.
 5.  **Data Retrieval:** The application verifies the on-chain permission. If valid, the IPFS CID is fetched and the document is rendered for the doctor.
+6.  **Revocation:** At any time, the patient can trigger a smart contract function to flip the permission state to false, instantly locking the doctor out of future data retrievals.
 
 ---
 
