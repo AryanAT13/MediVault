@@ -31,6 +31,8 @@ const UserSiteHomepage = () => {
     const [showAIModal, setShowAIModal] = useState(false);
     const [aiResult, setAiResult] = useState("");
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [activeHospitals, setActiveHospitals] = useState([]);
+    const [showPermissionsModal, setShowPermissionsModal] = useState(false);
 
     const handleAnalyzeReport = async (cid, category) => {
         setShowAIModal(true);
@@ -98,6 +100,23 @@ const UserSiteHomepage = () => {
                 allergies: data[5] || "None",
                 chronic: data[7] || "None"
             });
+
+            try {
+                const filter = contract.filters.AccessGranted(null, account);
+                const eventLogs = await contract.queryFilter(filter);
+                const uniqueHospitals = [...new Set(eventLogs.map(e => e.args[0]))];
+
+                const currentlyPermitted = [];
+                for (const hosp of uniqueHospitals) {
+                    const isPermitted = await contract.permitted(account, hosp);
+                    if (isPermitted) {
+                        currentlyPermitted.push(hosp);
+                    }
+                }
+                setActiveHospitals(currentlyPermitted);
+            } catch (err) {
+                console.error("Error fetching permitted hospitals", err);
+            }
 
             const reports = await contract.getReports(account);
 
@@ -229,6 +248,19 @@ const UserSiteHomepage = () => {
         }
     };
 
+    const handleRevokeAccess = async (hospitalAddress) => {
+        try {
+            const tx = await contract.revokeAccess(hospitalAddress);
+            toast.info("Revoking access on-chain...");
+            await tx.wait();
+            toast.success("Access Revoked Successfully!");
+            fetchBlockchainData();
+        } catch (error) {
+            console.error("Revoke Error:", error);
+            toast.error("Failed to revoke access.");
+        }
+    };
+
     const MediVaultLogo = () => (
         <div className="flex items-center gap-3">
             <div className="relative w-8 h-8 flex items-center justify-center">
@@ -355,10 +387,20 @@ const UserSiteHomepage = () => {
                             <div className="text-xl text-white font-medium pl-1">{emergencyData.chronic}</div>
                         </div>
 
-                        <div className="md:col-span-2 bg-[#0A0A0A] border border-white/5 rounded-3xl p-6">
-                            <h3 className="text-slate-400 text-sm font-bold tracking-widest uppercase mb-4 flex items-center gap-2">
-                                <Bell size={16} className="text-blue-500" /> Access Requests
-                            </h3>
+                        {/* Access Requests & Permissions Block */}
+                        <div className="md:col-span-2 bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 relative">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-slate-400 text-sm font-bold tracking-widest uppercase flex items-center gap-2">
+                                    <Bell size={16} className="text-blue-500" /> Access Requests
+                                </h3>
+                                <button
+                                    onClick={() => setShowPermissionsModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition text-xs font-bold text-white shadow-sm"
+                                >
+                                    <Shield size={14} className="text-red-400" /> Manage Permissions
+                                </button>
+                            </div>
+
                             {notifications.length === 0 ? (
                                 <div className="text-slate-600 text-sm italic">No pending requests. Your vault is secure.</div>
                             ) : (
@@ -582,7 +624,46 @@ const UserSiteHomepage = () => {
                     </div>
                 </div>
             )}
+            {/* Permissions Management Modal */}
+            {showPermissionsModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-[#0A0A0A] border border-white/10 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+                        <button
+                            onClick={() => setShowPermissionsModal(false)}
+                            className="absolute top-4 right-4 text-slate-500 hover:text-white transition"
+                        >
+                            <X size={20} />
+                        </button>
 
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
+                            <Shield size={20} className="text-red-500" /> Active Permissions
+                        </h3>
+
+                        {activeHospitals.length === 0 ? (
+                            <div className="text-slate-500 text-sm italic text-center py-8">
+                                No hospitals currently have access to your vault.
+                            </div>
+                        ) : (
+                            <div className="space-y-3 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
+                                {activeHospitals.map((hospAddress, i) => (
+                                    <div key={i} className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/5">
+                                        <div>
+                                            <div className="font-bold text-white text-sm mb-1">Hospital Connected</div>
+                                            <div className="text-xs font-mono text-slate-400 break-all">{hospAddress}</div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleRevokeAccess(hospAddress)}
+                                            className="w-full py-2.5 bg-red-500/10 text-red-500 border border-red-500/20 text-xs font-bold rounded-lg hover:bg-red-600 hover:text-white transition duration-300"
+                                        >
+                                            Revoke Access
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
