@@ -110,13 +110,22 @@ const UserSiteHomepage = () => {
                 for (const hosp of uniqueHospitals) {
                     const isPermitted = await contract.permitted(account, hosp);
                     if (isPermitted) {
-                        currentlyPermitted.push(hosp);
+                        let realName = "Unknown Hospital";
+                        try {
+                            const res = await axios.get(`/api/hospital-name/${hosp}`);
+                            realName = res.data.name;
+                        } catch (err) {
+                            console.error("Name fetch failed", err);
+                        }
+                        // Push BOTH address and name
+                        currentlyPermitted.push({ address: hosp, name: realName });
                     }
                 }
                 setActiveHospitals(currentlyPermitted);
             } catch (err) {
                 console.error("Error fetching permitted hospitals", err);
             }
+            // --------------------------------------------------------
 
             const reports = await contract.getReports(account);
 
@@ -645,14 +654,15 @@ const UserSiteHomepage = () => {
                             </div>
                         ) : (
                             <div className="space-y-3 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
-                                {activeHospitals.map((hospAddress, i) => (
+                                {activeHospitals.map((hosp, i) => (
                                     <div key={i} className="flex flex-col gap-3 p-4 bg-white/5 rounded-xl border border-white/5">
                                         <div>
-                                            <div className="font-bold text-white text-sm mb-1">Hospital Connected</div>
-                                            <div className="text-xs font-mono text-slate-400 break-all">{hospAddress}</div>
+                                            {/* Display the actual Hospital Name here */}
+                                            <div className="font-bold text-white text-sm mb-1">{hosp.name}</div>
+                                            <div className="text-xs font-mono text-slate-400 break-all">{hosp.address}</div>
                                         </div>
                                         <button
-                                            onClick={() => handleRevokeAccess(hospAddress)}
+                                            onClick={() => handleRevokeAccess(hosp.address)}
                                             className="w-full py-2.5 bg-red-500/10 text-red-500 border border-red-500/20 text-xs font-bold rounded-lg hover:bg-red-600 hover:text-white transition duration-300"
                                         >
                                             Revoke Access

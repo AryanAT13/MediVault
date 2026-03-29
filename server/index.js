@@ -97,6 +97,16 @@ app.post('/api/request-access', async (req, res) => {
     }
 });
 
+app.get('/api/hospital-name/:address', async (req, res) => {
+    try {
+        const hospital = await User.findOne({ walletAddress: req.params.address.toLowerCase() });
+        res.json({ name: hospital ? hospital.name : "Unknown Hospital" });
+    } catch (error) {
+        console.error("Lookup Error:", error);
+        res.json({ name: "Unknown Hospital" });
+    }
+});
+
 app.get('/api/notifications/:address', async (req, res) => {
     try {
         const user = await User.findOne({ walletAddress: req.params.address.toLowerCase() });
