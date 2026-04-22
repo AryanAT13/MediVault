@@ -31,13 +31,24 @@ Medical history is sensitive and must be tamper-proof. By logging record metadat
 ### 3. Granular Access Control & The "Kill Switch"
 We replace traditional administrative red tape with automated Smart Contracts. Patients have an absolute "Kill Switch", they can grant or instantly revoke access to specific hospitals. This permissioned architecture ensures that doctors get the data they need during emergencies, but the patient retains the power to lock their vault at any time.
 
+### 4. Gas Optimized Decentralized Storage
+Storing raw files on Ethereum is prohibitively expensive. MediVault routes file uploads through a Node.js middleware using multer. The file buffer is streamed directly to Pinata (IPFS), which generates a cryptographic hash—the CID (Content Identifier).
+Only this lightweight CID, along with a UNIX timestamp and packed category string, is minted to the MediVault.sol smart contract, drastically reducing state-write costs.
+
+### 5. On-Chain Access Control & Event Filtering
+The core security layer is governed by a custom Solidity smart contract.
+
+Granular Permissions: A nested mapping (mapping(address => mapping(address => bool)) public permitted;) manages exact state access between patient and hospital addresses.
+
+State Reconstruction via Events: Instead of storing an array of authorized hospitals, the React client utilizes ethers.js to query historical AccessGranted and AccessRevoked event logs. This reconstructs the "Active Permissions" state off-chain in real-time for the dashboard UI.
+
 ---
 
 ## Key Features
 
 ### Patient Portal
 * **Unified Health Timeline:** A chronological, immutable view of the patient's complete medical history across different providers.
-* **AI-Driven Health Literacy:** An integrated AI analysis tool that simplifies complex lab reports and diagnoses into understandable language, empowering patients to make informed health decisions.
+* **AI-Driven Health Literacy:** An integrated AI analysis tool that simplifies complex lab reports and diagnoses into understandable language, from the IPFS gateway via the CID, parses the document structure, and constructs a strict prompt constraint for the LLM, empowering patients to make informed health decisions.
 * **Active Permissions (The Kill Switch):** A dedicated dashboard interface to monitor exactly which hospitals currently have access. The system automatically resolves complex blockchain addresses into readable hospital names, allowing patients to revoke access on-chain with a single click.
 
 ### Hospital & Doctor Portal
@@ -54,6 +65,14 @@ The core access control logic is deployed on the **Ethereum Sepolia Testnet**.
 * **Network:** Sepolia
 * **Contract Address:** `0x67fAB2346ca0b62C159FB8f8c1017c26B93d71f8`
 * **Explorer:** [View on Etherscan](https://sepolia.etherscan.io/address/0x67fAB2346ca0b62C159FB8f8c1017c26B93d71f8)
+
+### Key Modifiers & Security
+
+* **onlyPatient(address patient):** Ensures critical data (like blood type and allergies) can only be mutated by the wallet owner.
+
+* **onlyAuthorized(address patient):** A strict check requiring msg.sender to either be the patient themselves OR hold a true state in the permitted mapping before allowing CID retrieval.
+
+* **Absolute Revocation:** Patients possess a cryptographic kill switch. Triggering revokeAccess(address) instantly flips the permitted boolean to false. Any subsequent API calls by that specific hospital address will fail at the contract level, immediately locking them out of the vault.
 
 ---
 
